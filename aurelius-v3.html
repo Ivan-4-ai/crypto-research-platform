@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aurelius · Institutional Crypto Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0A0E1A; --bg-elev: #0F1420; --bg-card: #131826; --bg-hover: #1A2030;
+  --border: #1F2638; --border-light: #2A3349;
+  --text: #E8ECF4; --text-dim: #8B95A8; --text-mute: #5A6478;
+  --amber: #F59E0B; --emerald: #10B981; --red: #EF4444;
+  --cyan: #06B6D4; --violet: #8B5CF6; --navy: #1E3A8A;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: 'Inter Tight', system-ui, sans-serif; min-height: 100vh; }
+button, input, select { font-family: inherit; }
+button { cursor: pointer; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+/* ===== LAYOUT ===== */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar { background: var(--bg-elev); border-bottom: 1px solid var(--border); padding: 10px 20px; position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; }
+.topbar-left { display: flex; align-items: center; gap: 24px; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-logo { width: 24px; height: 24px; background: var(--amber); position: relative; }
+.brand-logo::before { content: ''; position: absolute; inset: 4px; background: var(--bg); }
+.brand-logo::after { content: ''; position: absolute; inset: 8px; background: var(--amber); }
+.brand-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; line-height: 1; }
+.brand-tag { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-mute); letter-spacing: 2px; margin-top: 2px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.search-bar { display: flex; align-items: center; gap: 8px; background: var(--bg-card); border: 1px solid var(--border); padding: 5px 10px; position: relative; }
+.search-bar input { background: transparent; border: none; outline: none; color: var(--text-dim); font-size: 11px; font-family: 'JetBrains Mono', monospace; width: 240px; }
+.search-bar input::placeholder { color: var(--text-mute); }
+.search-kbd { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; background: var(--border); padding: 1px 5px; }
+.search-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-light); max-height: 320px; overflow-y: auto; z-index: 100; display: none; margin-top: 1px; }
+.search-results.active { display: block; }
+.search-result { padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid rgba(31,38,56,0.4); }
+.search-result:hover { background: var(--bg-hover); }
+.search-result img { width: 16px; height: 16px; border-radius: 50%; }
+.live-status { display: flex; align-items: center; gap: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); }
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 6px var(--emerald); animation: pulse 2s ease-in-out infinite; }
+.live-dot.degraded { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.live-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.body { display: flex; flex: 1; }
+.sidebar { width: 220px; background: var(--bg-elev); border-right: 1px solid var(--border); padding: 20px 0; position: sticky; top: 51px; height: calc(100vh - 51px); overflow-y: auto; }
+.sidebar-section { padding: 0 16px; margin-bottom: 12px; }
+.sidebar-label { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; }
+.sidebar-item { width: 100%; text-align: left; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: transparent; border: none; border-left: 2px solid transparent; }
+.sidebar-item.active { background: rgba(245,158,11,0.10); border-left-color: var(--amber); }
+.sidebar-item .code { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; width: 16px; }
+.sidebar-item .label { font-size: 11.5px; color: var(--text-dim); letter-spacing: 0.2px; }
+.sidebar-item.active .label { color: var(--text); }
+.sidebar-item.active .icon svg { stroke: var(--amber); }
+.sidebar-item .icon svg { stroke: var(--text-dim); }
+.sidebar-portfolio-summary { padding: 16px; margin-top: 12px; border-top: 1px solid var(--border); }
+.sps-label { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; margin-bottom: 8px; }
+.sps-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: var(--text); letter-spacing: -0.3px; }
+.sps-change { font-family: 'JetBrains Mono', monospace; font-size: 10px; margin-top: 2px; }
+.sps-stat { display: flex; justify-content: space-between; padding: 4px 0; font-size: 9.5px; font-family: 'JetBrains Mono', monospace; }
+
+.main { flex: 1; padding: 20px; max-width: calc(100vw - 220px); overflow-x: hidden; }
+.breadcrumb { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.breadcrumb-trail { display: flex; align-items: center; gap: 8px; font-size: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1.2px; color: var(--text-mute); }
+.breadcrumb-trail .active { color: var(--amber); }
+.breadcrumb-meta { display: flex; align-items: center; gap: 12px; font-size: 10px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; }
+
+.module { display: none; }
+.module.active { display: block; animation: fadeIn 0.2s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== PANELS / GRID ===== */
+.panel { background: var(--bg-card); border: 1px solid var(--border); }
+.panel-pad { padding: 16px; }
+.grid-12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.gap-2 { gap: 8px; }
+.col-3 { grid-column: span 3; } .col-4 { grid-column: span 4; } .col-5 { grid-column: span 5; }
+.col-6 { grid-column: span 6; } .col-7 { grid-column: span 7; } .col-8 { grid-column: span 8; }
+.col-9 { grid-column: span 9; } .col-12 { grid-column: span 12; }
+
+.section-title { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; gap: 12px; }
+.section-title-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--amber); letter-spacing: 2px; text-transform: uppercase; }
+.section-title-sub { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+.source-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 8.5px; font-family: 'JetBrains Mono', monospace; color: var(--emerald); letter-spacing: 1px; margin-left: 8px; }
+.source-tag.demo { color: var(--amber); }
+
+/* ===== KPIs ===== */
+.kpi { background: var(--bg-card); border: 1px solid var(--border); padding: 14px 16px; transition: border-color 0.3s, transform 0.15s; }
+.kpi.updated { border-color: var(--amber); }
+.kpi.flash-up { animation: flashUp 0.6s ease-out; }
+.kpi.flash-down { animation: flashDown 0.6s ease-out; }
+@keyframes flashUp { 0% { background: rgba(16,185,129,0.15); } 100% { background: var(--bg-card); } }
+@keyframes flashDown { 0% { background: rgba(239,68,68,0.15); } 100% { background: var(--bg-card); } }
+.kpi-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.kpi-label { font-size: 9.5px; color: var(--text-mute); letter-spacing: 1.2px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+.kpi-accent { width: 4px; height: 4px; border-radius: 50%; }
+.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500; color: var(--text); letter-spacing: -0.5px; line-height: 1; }
+.kpi-value.loading { color: var(--text-mute); font-style: italic; font-size: 14px; }
+.kpi-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.kpi-change { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+.kpi-change.up { color: var(--emerald); }
+.kpi-change.down { color: var(--red); }
+.kpi-sub { font-size: 9.5px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; }
+
+.tag { font-size: 9px; font-family: 'JetBrains Mono', monospace; padding: 2px 6px; letter-spacing: 1px; text-transform: uppercase; display: inline-block; border: 1px solid; }
+.tag.amber { color: var(--amber); border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.10); }
+.tag.emerald { color: var(--emerald); border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.10); }
+.tag.red { color: var(--red); border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.10); }
+.tag.cyan { color: var(--cyan); border-color: rgba(6,182,212,0.4); background: rgba(6,182,212,0.10); }
+.tag.mute { color: var(--text-mute); border-color: rgba(90,100,120,0.4); background: rgba(90,100,120,0.10); }
+
+/* ===== TICKER ===== */
+.ticker-wrap { background: var(--bg-elev); border: 1px solid var(--border); padding: 8px 0; overflow: hidden; margin-bottom: 16px; }
+.ticker-scroll { display: inline-block; white-space: nowrap; animation: ticker 120s linear infinite; }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.ticker-item { display: inline-flex; align-items: center; gap: 8px; margin: 0 14px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+.ticker-item img { width: 12px; height: 12px; border-radius: 50%; }
+.ticker-ticker { color: var(--text); font-weight: 500; }
+.ticker-price { color: var(--text-dim); }
+.ticker-change.up { color: var(--emerald); }
+.ticker-change.down { color: var(--red); }
+
+/* ===== TIME FILTER ===== */
+.time-filter { display: flex; gap: 4px; }
+.time-filter button { font-size: 9.5px; font-family: 'JetBrains Mono', monospace; padding: 3px 8px; letter-spacing: 1px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+.time-filter button.active { background: rgba(245,158,11,0.20); color: var(--amber); border-color: rgba(245,158,11,0.4); }
+
+/* ===== TABLES ===== */
+.tbl { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+.tbl-head { display: grid; gap: 8px; padding: 8px; color: var(--text-mute); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.tbl-head .sortable { cursor: pointer; user-select: none; }
+.tbl-head .sortable:hover { color: var(--amber); }
+.tbl-head .sortable.active { color: var(--amber); }
+.tbl-row { display: grid; gap: 8px; padding: 8px; border-bottom: 1px solid rgba(31,38,56,0.4); transition: background 0.1s; }
+.tbl-row.alt { background: rgba(15,20,32,0.5); }
+.tbl-row:hover { background: var(--bg-hover); cursor: pointer; }
+.text-right { text-align: right; }
+.lb-head, .lb-row { grid-template-columns: 40px 1fr 90px 70px 90px 90px 70px 70px 80px; }
+.lb-token { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lb-token img { width: 16px; height: 16px; border-radius: 50%; }
+.lb-name { color: var(--text-mute); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spark { width: 70px; height: 20px; }
+
+/* ===== PORTFOLIO ===== */
+.port-empty { padding: 40px; text-align: center; }
+.port-empty-title { font-family: 'Fraunces', serif; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+.port-empty-sub { font-size: 12px; color: var(--text-mute); margin-bottom: 20px; }
+.btn-primary { padding: 8px 14px; background: var(--amber); border: none; font-size: 11px; color: var(--bg); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; font-weight: 600; }
+.btn-secondary { padding: 8px 14px; background: transparent; border: 1px solid var(--border); font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; }
+.btn-secondary:hover { color: var(--text); border-color: var(--border-light); }
+.btn-danger { padding: 6px 10px; background: transparent; border: 1px solid rgba(239,68,68,0.3); font-size: 10px; color: var(--red); font-family: 'JetBrains Mono', monospace; }
+
+.port-head, .port-row { grid-template-columns: 32px 1fr 90px 90px 90px 90px 90px 90px 32px; }
+.port-row { align-items: center; }
+.port-row input { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; width: 100%; outline: none; }
+.port-row input:focus { border-color: var(--amber); }
+.port-row .remove { color: var(--text-mute); background: transparent; border: none; font-size: 14px; padding: 2px 6px; }
+.port-row .remove:hover { color: var(--red); }
+
+/* Add holding form */
+.add-holding-form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; padding: 12px; background: var(--bg-elev); border: 1px solid var(--border); margin-bottom: 16px; }
+.add-holding-form input { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; outline: none; }
+.add-holding-form input:focus { border-color: var(--amber); }
+.add-holding-form input::placeholder { color: var(--text-mute); }
+.add-holding-form-wrap { position: relative; }
+.asset-suggest { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-light); max-height: 200px; overflow-y: auto; z-index: 50; display: none; margin-top: 1px; }
+.asset-suggest.active { display: block; }
+.asset-suggest-item { padding: 6px 12px; cursor: pointer; font-size: 11px; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 8px; }
+.asset-suggest-item:hover { background: var(--bg-hover); }
+.asset-suggest-item img { width: 14px; height: 14px; border-radius: 50%; }
+
+/* Portfolio risk meter */
+.risk-meter { padding: 16px; }
+.risk-score-display { text-align: center; margin-bottom: 16px; }
+.risk-score-label { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; }
+.risk-score-value { font-family: 'Fraunces', serif; font-size: 56px; font-weight: 400; letter-spacing: -2px; line-height: 1; margin: 4px 0; }
+.risk-score-sub { font-size: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
+
+.risk-bars { display: flex; flex-direction: column; gap: 10px; }
+.risk-bar { display: flex; flex-direction: column; gap: 4px; }
+.risk-bar-head { display: flex; justify-content: space-between; align-items: center; }
+.risk-bar-label { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
+.risk-bar-val { font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+.risk-bar-track { height: 4px; background: var(--border); position: relative; }
+.risk-bar-fill { height: 100%; transition: width 0.5s; }
+
+/* Recommendations */
+.reco-list { display: flex; flex-direction: column; gap: 10px; }
+.reco-card { padding: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-left: 3px solid; }
+.reco-card.warning { border-left-color: var(--red); }
+.reco-card.suggest { border-left-color: var(--amber); }
+.reco-card.good { border-left-color: var(--emerald); }
+.reco-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.reco-title { font-family: 'Fraunces', serif; font-size: 13px; color: var(--text); font-weight: 500; }
+.reco-body { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+.reco-action { font-size: 10px; color: var(--amber); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-top: 6px; }
+
+/* Slider rows */
+.slider-row { margin-bottom: 16px; }
+.slider-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.slider-label { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
+.slider-val { font-size: 11px; color: var(--amber); font-family: 'JetBrains Mono', monospace; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 3px; background: var(--border); outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; background: var(--amber); cursor: pointer; border-radius: 0; }
+input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: var(--amber); cursor: pointer; border: none; border-radius: 0; }
+
+/* DCF */
+.dcf-table { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.dcf-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(31,38,56,0.4); }
+.dcf-row .label { color: var(--text-dim); width: 75px; }
+.dcf-row .bar { flex: 1; height: 8px; background: var(--border); position: relative; }
+.dcf-row .fill { height: 100%; opacity: 0.7; }
+.dcf-row .val { color: var(--text); width: 65px; text-align: right; }
+.dcf-row .pct { color: var(--text-mute); width: 40px; text-align: right; font-size: 9px; }
+
+.fv-box { margin-top: 24px; padding: 14px; background: var(--bg-elev); border: 1px solid rgba(245,158,11,0.4); }
+.fv-label { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; margin-bottom: 6px; }
+.fv-value { font-family: 'JetBrains Mono', monospace; font-size: 30px; color: var(--amber); font-weight: 500; letter-spacing: -1px; }
+.fv-sub { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+
+/* Copilot */
+.copilot-side-btn { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: transparent; border: 1px solid var(--border); font-size: 10.5px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; text-align: left; margin-bottom: 4px; }
+.copilot-side-btn:hover { background: var(--bg-hover); color: var(--text); }
+.copilot-panel { display: flex; flex-direction: column; height: 640px; }
+.copilot-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.copilot-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.msg-system { font-size: 10.5px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; border-left: 2px solid var(--emerald); padding-left: 12px; }
+.msg-user { display: flex; justify-content: flex-end; }
+.msg-user-bubble { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); padding: 8px 14px; max-width: 70%; font-size: 12px; color: var(--text); }
+.msg-assistant { display: flex; gap: 12px; }
+.msg-assistant-icon { width: 24px; height: 24px; background: rgba(245,158,11,0.20); border: 1px solid rgba(245,158,11,0.4); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.msg-assistant-body { flex: 1; }
+.msg-assistant-text { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; line-height: 1.6; }
+.msg-analysis { border: 1px solid var(--border); padding: 14px; background: var(--bg-elev); }
+.msg-analysis-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.msg-section-label { font-size: 9px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; margin-bottom: 6px; }
+.msg-section-label.signals { color: var(--amber); }
+.msg-section-label.risks { color: var(--red); margin-top: 12px; }
+.msg-bullet { font-size: 11px; color: var(--text); margin-bottom: 4px; padding-left: 12px; position: relative; line-height: 1.5; }
+.msg-bullet::before { content: '›'; position: absolute; left: 0; color: var(--emerald); }
+.msg-risk { font-size: 11px; color: var(--text-dim); padding-left: 12px; position: relative; margin-bottom: 4px; }
+.msg-risk::before { content: '‹'; position: absolute; left: 0; color: var(--red); }
+.copilot-input { padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+.copilot-input input { flex: 1; background: var(--bg-elev); border: 1px solid var(--border); padding: 10px 14px; font-size: 12px; color: var(--text); outline: none; }
+.copilot-input button { padding: 10px 18px; background: var(--amber); border: none; font-size: 11px; color: var(--bg); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; font-weight: 600; }
+
+.alert-banner { padding: 10px 14px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); margin-bottom: 16px; font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 10px; }
+
+.empty-state { padding: 40px; text-align: center; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+.footer { margin-top: 32px; padding: 16px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
+
+button:hover:not(:disabled) { opacity: 0.85; transition: opacity 0.15s; }
+svg { width: 1em; height: 1em; }
+
+/* Compact stat grid for portfolio metrics */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.stat-cell { padding: 10px 12px; background: var(--bg-elev); border: 1px solid var(--border); }
+.stat-cell-label { font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.2px; }
+.stat-cell-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--text); margin-top: 2px; }
+
+/* Exposure chips */
+.exposure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.exposure-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg-elev); border: 1px solid var(--border); }
+.exposure-label { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; flex: 1; }
+.exposure-bar { width: 60px; height: 3px; background: var(--border); position: relative; }
+.exposure-fill { height: 100%; background: var(--amber); }
+.exposure-val { font-size: 10px; color: var(--text); font-family: 'JetBrains Mono', monospace; min-width: 36px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <div>
+        <div class="brand-name">AURELIUS</div>
+        <div class="brand-tag">v3 · INSTITUTIONAL CRYPTO TERMINAL</div>
+      </div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#5A6478" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="global-search" placeholder="Search any of 250 protocols · BTC, ETH, SOL..." autocomplete="off" />
+      <span class="search-kbd">⌘K</span>
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <div class="live-status">
+      <div class="live-dot" id="status-dot"></div>
+      <span id="live-time">LIVE</span>
+    </div>
+  </div>
+</header>
+
+<div class="body">
+
+<aside class="sidebar">
+  <div class="sidebar-section"><div class="sidebar-label">WORKSPACE</div></div>
+  <button class="sidebar-item active" data-module="dashboard">
+    <span class="code">01</span>
+    <span class="icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg></span>
+    <span class="label">Market Dashboard</span>
+  </button>
+  <button class="sidebar-item" data-module="portfolio">
+    <span class="code">02</span>
+    <span class="icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></span>
+    <span class="label">Portfolio Engine</span>
+  </button>
+  <button class="sidebar-item" data-module="reco">
+    <span class="code">03</span>
+    <span class="icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    <span class="label">Risk & Recommendations</span>
+  </button>
+  <button class="sidebar-item" data-module="defi">
+    <span class="code">04</span>
+    <span class="icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+    <span class="label">DeFi Intelligence</span>
+  </button>
+  <button class="sidebar-item" data-module="valuation">
+    <span class="code">05</span>
+    <span class="icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+    <span class="label">Valuation Lab</span>
+  </button>
+  <button class="sidebar-item" data-module="tokenomics">
+    <span class="code">06</span>
+    <span class="icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+    <span class="label">Tokenomics Engine</span>
+  </button>
+  <button class="sidebar-item" data-module="copilot">
+    <span class="code">07</span>
+    <span class="icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke-width="1.5"><path d="M12 8V4H8M4 8h16v12H4zm4 4h.01M16 12h.01"/></svg></span>
+    <span class="label">AI Copilot</span>
+  </button>
+
+  <div class="sidebar-portfolio-summary" id="sidebar-port">
+    <div class="sps-label">PORTFOLIO</div>
+    <div class="sps-value" id="sps-value">Empty</div>
+    <div class="sps-change" id="sps-change">—</div>
+    <div style="margin-top: 12px;">
+      <div class="sps-stat"><span style="color: var(--text-mute)">Holdings</span><span id="sps-count">0</span></div>
+      <div class="sps-stat"><span style="color: var(--text-mute)">Cost basis</span><span id="sps-cost">$0</span></div>
+      <div class="sps-stat"><span style="color: var(--text-mute)">Unrealized</span><span id="sps-pnl">$0</span></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="breadcrumb">
+    <div class="breadcrumb-trail">
+      <span>AURELIUS</span><span>›</span>
+      <span class="active" id="breadcrumb-active">MARKET DASHBOARD</span>
+    </div>
+    <div class="breadcrumb-meta">
+      <span id="universe-count">Universe: loading</span><span>·</span>
+      <span id="last-sync">Sync: —</span>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <div class="module active" id="module-dashboard">
+    <div class="ticker-wrap"><div class="ticker-scroll" id="ticker-scroll">
+      <span class="ticker-item"><span style="color: var(--text-mute)">Fetching live prices...</span></span>
+    </div></div>
+
+    <div class="grid-12 gap-2" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 16px;">
+      <div class="kpi" id="kpi-mcap"><div class="kpi-header"><span class="kpi-label">Total Market Cap</span><div class="kpi-accent" style="background: var(--amber)"></div></div><div class="kpi-value loading">loading</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">CoinGecko</span></div></div>
+      <div class="kpi" id="kpi-vol"><div class="kpi-header"><span class="kpi-label">24h Volume</span><div class="kpi-accent" style="background: var(--cyan)"></div></div><div class="kpi-value loading">loading</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">spot</span></div></div>
+      <div class="kpi" id="kpi-btcdom"><div class="kpi-header"><span class="kpi-label">BTC Dominance</span><div class="kpi-accent" style="background: var(--amber)"></div></div><div class="kpi-value loading">loading</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">regime signal</span></div></div>
+      <div class="kpi" id="kpi-tvl"><div class="kpi-header"><span class="kpi-label">DeFi TVL</span><div class="kpi-accent" style="background: var(--emerald)"></div></div><div class="kpi-value loading">loading</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">DefiLlama</span></div></div>
+      <div class="kpi" id="kpi-fearGreed"><div class="kpi-header"><span class="kpi-label">Market Regime</span><div class="kpi-accent" style="background: var(--emerald)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">composite</span></div></div>
+    </div>
+
+    <div class="grid-12">
+      <div class="panel panel-pad col-8">
+        <div class="section-title">
+          <div>
+            <div class="section-title-text">BTC PRICE <span class="source-tag">● COINGECKO</span></div>
+            <div class="section-title-sub" id="btc-stats">loading...</div>
+          </div>
+          <div class="time-filter" id="btc-tf">
+            <button data-tf="1">1D</button><button data-tf="7">7D</button>
+            <button data-tf="30" class="active">30D</button><button data-tf="90">90D</button>
+            <button data-tf="365">1Y</button>
+          </div>
+        </div>
+        <div style="height: 280px; position: relative;">
+          <canvas id="btc-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="panel panel-pad col-4">
+        <div class="section-title"><div>
+          <div class="section-title-text">SECTOR HEATMAP <span class="source-tag">● 24H</span></div>
+          <div class="section-title-sub">Top 100 grouped · weighted 24h returns</div>
+        </div></div>
+        <div id="heatmap" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px;"></div>
+      </div>
+
+      <div class="panel panel-pad col-12">
+        <div class="section-title">
+          <div>
+            <div class="section-title-text">PROTOCOL LEADERBOARD <span class="source-tag">● LIVE</span></div>
+            <div class="section-title-sub">Top 50 by market cap · click to add to portfolio · sortable</div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 10px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace" id="lb-count">loading</span>
+          </div>
+        </div>
+        <div class="tbl">
+          <div class="tbl-head lb-head">
+            <span>#</span><span class="sortable" data-sort="name">Asset</span>
+            <span class="text-right sortable" data-sort="current_price">Price</span>
+            <span class="text-right sortable active" data-sort="market_cap">Mcap ▼</span>
+            <span class="text-right sortable" data-sort="price_change_percentage_24h">24h</span>
+            <span class="text-right sortable" data-sort="price_change_percentage_7d_in_currency">7d</span>
+            <span class="text-right sortable" data-sort="total_volume">Volume</span>
+            <span class="text-right">Spark</span>
+            <span class="text-right">Action</span>
+          </div>
+          <div id="leaderboard"><div class="empty-state">Fetching protocols...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PORTFOLIO ===== -->
+  <div class="module" id="module-portfolio">
+    <div class="alert-banner" id="port-empty-banner" style="display: none;">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Start by adding your first holding below or use the asset search/leaderboard. Portfolio is saved to your browser locally — no account, no server.
+    </div>
+
+    <!-- Add holding form -->
+    <div class="add-holding-form">
+      <div class="add-holding-form-wrap">
+        <input type="text" id="add-asset" placeholder="Search asset (e.g. bitcoin)" autocomplete="off" />
+        <div class="asset-suggest" id="asset-suggest"></div>
+      </div>
+      <input type="number" id="add-qty" placeholder="Quantity" step="any" min="0" />
+      <input type="number" id="add-cost" placeholder="Avg cost ($)" step="any" min="0" />
+      <button class="btn-primary" id="add-btn">ADD HOLDING</button>
+    </div>
+
+    <div class="stat-grid" id="port-stats" style="display: none;">
+      <div class="stat-cell"><div class="stat-cell-label">PORTFOLIO VALUE</div><div class="stat-cell-value" id="ps-value">—</div></div>
+      <div class="stat-cell"><div class="stat-cell-label">COST BASIS</div><div class="stat-cell-value" id="ps-cost">—</div></div>
+      <div class="stat-cell"><div class="stat-cell-label">UNREALIZED PNL</div><div class="stat-cell-value" id="ps-pnl">—</div></div>
+      <div class="stat-cell"><div class="stat-cell-label">24H CHANGE</div><div class="stat-cell-value" id="ps-24h">—</div></div>
+    </div>
+
+    <div class="grid-12">
+      <div class="panel panel-pad col-12">
+        <div class="section-title"><div>
+          <div class="section-title-text">HOLDINGS</div>
+          <div class="section-title-sub" id="holdings-sub">Edit quantities/cost basis inline · click row to view</div>
+        </div></div>
+        <div class="tbl">
+          <div class="tbl-head port-head">
+            <span></span>
+            <span>Asset</span>
+            <span class="text-right">Price</span>
+            <span class="text-right">Quantity</span>
+            <span class="text-right">Avg Cost</span>
+            <span class="text-right">Value</span>
+            <span class="text-right">PnL</span>
+            <span class="text-right">Weight</span>
+            <span></span>
+          </div>
+          <div id="holdings-list"><div class="empty-state">No holdings. Add one above.</div></div>
+        </div>
+      </div>
+
+      <div class="panel panel-pad col-7">
+        <div class="section-title"><div>
+          <div class="section-title-text">PORTFOLIO PERFORMANCE</div>
+          <div class="section-title-sub">Backtested 30D · weighted by current allocation</div>
+        </div></div>
+        <div style="height: 240px;"><canvas id="port-perf-chart"></canvas></div>
+      </div>
+
+      <div class="panel panel-pad col-5">
+        <div class="section-title"><div>
+          <div class="section-title-text">ALLOCATION</div>
+          <div class="section-title-sub">Current weights</div>
+        </div></div>
+        <div style="height: 240px;"><canvas id="port-alloc-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RECOMMENDATIONS ===== -->
+  <div class="module" id="module-reco">
+    <div class="grid-12">
+      <div class="panel panel-pad col-4">
+        <div class="section-title"><div>
+          <div class="section-title-text">PORTFOLIO SCORE</div>
+          <div class="section-title-sub">Composite institutional score</div>
+        </div></div>
+        <div class="risk-meter">
+          <div class="risk-score-display">
+            <div class="risk-score-label">DIVERSIFICATION SCORE</div>
+            <div class="risk-score-value" id="risk-score">—</div>
+            <div class="risk-score-sub" id="risk-score-grade">No portfolio</div>
+          </div>
+          <div class="risk-bars" id="risk-bars">
+            <div class="empty-state">Add holdings to see analysis</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-pad col-4">
+        <div class="section-title"><div>
+          <div class="section-title-text">EXPOSURE ANALYSIS</div>
+          <div class="section-title-sub">By sector, chain, narrative</div>
+        </div></div>
+        <div style="font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; margin-bottom: 8px;">SECTOR EXPOSURE</div>
+        <div class="exposure-grid" id="sector-exposure"></div>
+        <div style="font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; margin: 16px 0 8px;">NARRATIVE EXPOSURE</div>
+        <div class="exposure-grid" id="narrative-exposure"></div>
+      </div>
+
+      <div class="panel panel-pad col-4">
+        <div class="section-title"><div>
+          <div class="section-title-text">RISK PROFILE</div>
+          <div class="section-title-sub">Set your target style</div>
+        </div></div>
+        <div class="slider-row">
+          <div class="slider-head"><span class="slider-label">RISK APPETITE</span><span class="slider-val" id="risk-appetite-val">Moderate</span></div>
+          <input type="range" min="1" max="5" value="3" id="risk-appetite" />
+          <div style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; margin-top: 4px;">
+            <span>Conservative</span><span>Aggressive</span>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span class="slider-label">TIME HORIZON</span><span class="slider-val" id="horizon-val">Long-term</span></div>
+          <input type="range" min="1" max="3" value="3" id="horizon" />
+          <div style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; margin-top: 4px;">
+            <span>Short</span><span>Mid</span><span>Long</span>
+          </div>
+        </div>
+        <div style="font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; margin: 16px 0 8px;">RECOMMENDED ALLOCATION</div>
+        <div id="target-allocation" style="font-size: 10.5px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); line-height: 1.7;"></div>
+      </div>
+
+      <div class="panel panel-pad col-12">
+        <div class="section-title"><div>
+          <div class="section-title-text">RECOMMENDATIONS</div>
+          <div class="section-title-sub">Actionable suggestions from portfolio analysis</div>
+        </div></div>
+        <div class="reco-list" id="reco-list">
+          <div class="empty-state">Add holdings to receive recommendations.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DEFI ===== -->
+  <div class="module" id="module-defi">
+    <div class="grid-12 gap-2" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
+      <div class="kpi" id="kpi-globaltvl"><div class="kpi-header"><span class="kpi-label">Global TVL</span><div class="kpi-accent" style="background: var(--emerald)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">7D</span></div></div>
+      <div class="kpi" id="kpi-protcount"><div class="kpi-header"><span class="kpi-label">Protocols</span><div class="kpi-accent" style="background: var(--amber)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">tracked</span></div></div>
+      <div class="kpi" id="kpi-topchain"><div class="kpi-header"><span class="kpi-label">Top Chain</span><div class="kpi-accent" style="background: var(--cyan)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">by TVL</span></div></div>
+      <div class="kpi" id="kpi-topcat"><div class="kpi-header"><span class="kpi-label">Top Category</span><div class="kpi-accent" style="background: var(--violet)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">by TVL</span></div></div>
+    </div>
+
+    <div class="grid-12">
+      <div class="panel panel-pad col-12">
+        <div class="section-title"><div>
+          <div class="section-title-text">GLOBAL DEFI TVL · HISTORICAL <span class="source-tag">● DEFILLAMA</span></div>
+          <div class="section-title-sub">All chains aggregated · full history</div>
+        </div></div>
+        <div style="height: 260px;"><canvas id="tvl-chart"></canvas></div>
+      </div>
+
+      <div class="panel panel-pad col-7">
+        <div class="section-title"><div>
+          <div class="section-title-text">TOP DEFI PROTOCOLS</div>
+          <div class="section-title-sub">Ranked by TVL · live</div>
+        </div></div>
+        <div class="tbl">
+          <div class="tbl-head" style="grid-template-columns: 40px 1fr 100px 70px 70px 100px">
+            <span>#</span><span>Protocol</span><span class="text-right">TVL</span>
+            <span class="text-right">1D</span><span class="text-right">7D</span><span>Category</span>
+          </div>
+          <div id="defi-table"><div class="empty-state">Loading...</div></div>
+        </div>
+      </div>
+
+      <div class="panel panel-pad col-5">
+        <div class="section-title"><div>
+          <div class="section-title-text">TVL BY CHAIN · TOP 10</div>
+          <div class="section-title-sub">Live aggregated TVL</div>
+        </div></div>
+        <div style="height: 360px;"><canvas id="chain-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VALUATION ===== -->
+  <div class="module" id="module-valuation">
+    <div class="alert-banner">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Base fees auto-pulled from DefiLlama where available. DCF applies an exit multiple to convert fee stream to enterprise value.
+    </div>
+
+    <div class="grid-12">
+      <div class="panel panel-pad col-8">
+        <div class="section-title">
+          <div>
+            <div class="section-title-text">INTRINSIC VALUE MODEL <span class="source-tag">● DEFILLAMA</span></div>
+            <div class="section-title-sub">5-year DCF + terminal · multi-method</div>
+          </div>
+          <select id="val-protocol" style="background: var(--bg-elev); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px;">
+            <option value="ethereum">Ethereum</option>
+            <option value="solana">Solana</option>
+            <option value="uniswap">Uniswap</option>
+            <option value="aave">Aave</option>
+            <option value="makerdao">MakerDAO</option>
+            <option value="lido">Lido</option>
+            <option value="gmx">GMX</option>
+            <option value="curve-dex">Curve</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 12px;">
+          <div>
+            <div style="font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; margin-bottom: 6px;">BASE CASH FLOW · TTM FEES</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--text); margin-bottom: 16px;" id="val-base-cf">loading...</div>
+            <div class="slider-row">
+              <div class="slider-head"><span class="slider-label">DISCOUNT RATE (WACC)</span><span class="slider-val" id="disc-val">18%</span></div>
+              <input type="range" min="5" max="30" value="18" id="disc-slider" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span class="slider-label">GROWTH RATE Y1-5</span><span class="slider-val" id="growth-val">24%</span></div>
+              <input type="range" min="-10" max="60" value="24" id="growth-slider" />
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><span class="slider-label">EXIT MULTIPLE (P/F)</span><span class="slider-val" id="exit-val">15×</span></div>
+              <input type="range" min="3" max="40" value="15" id="exit-slider" />
+            </div>
+            <div class="fv-box">
+              <div class="fv-label">DCF FAIR VALUE</div>
+              <div class="fv-value" id="fv-value">$—</div>
+              <div class="fv-sub" id="fv-sub">vs current</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; margin-bottom: 8px;">CASH FLOW WATERFALL</div>
+            <div class="dcf-table" id="dcf-table"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-pad col-4">
+        <div class="section-title"><div>
+          <div class="section-title-text">SCENARIO TREE</div>
+          <div class="section-title-sub">Probability-weighted EV</div>
+        </div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;" id="scenario-tree"></div>
+      </div>
+
+      <div class="panel panel-pad col-12">
+        <div class="section-title"><div>
+          <div class="section-title-text">MONTE CARLO · PRICE SIMULATION</div>
+          <div class="section-title-sub">Geometric Brownian Motion · 10,000 paths · 12-month horizon</div>
+        </div></div>
+        <div style="height: 260px;"><canvas id="mc-chart"></canvas></div>
+        <div style="display: flex; gap: 16px; margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; flex-wrap: wrap;" id="mc-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOKENOMICS ===== -->
+  <div class="module" id="module-tokenomics">
+    <div class="alert-banner">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Live tokenomics from CoinGecko. Vesting/unlock schedules require paid sources (Token Unlocks/Messari) — modeled via sliders.
+    </div>
+
+    <div class="grid-12 gap-2" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
+      <div class="kpi" id="kpi-circ"><div class="kpi-header"><span class="kpi-label" id="kpi-circ-asset-lbl">Circulating</span><div class="kpi-accent" style="background: var(--amber)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub" id="kpi-circ-asset">ETH</span></div></div>
+      <div class="kpi" id="kpi-fdv"><div class="kpi-header"><span class="kpi-label">FDV / Mcap</span><div class="kpi-accent" style="background: var(--amber)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">dilution risk</span></div></div>
+      <div class="kpi" id="kpi-ath"><div class="kpi-header"><span class="kpi-label">From ATH</span><div class="kpi-accent" style="background: var(--emerald)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">distance</span></div></div>
+      <div class="kpi" id="kpi-supply"><div class="kpi-header"><span class="kpi-label">Max Supply</span><div class="kpi-accent" style="background: var(--cyan)"></div></div><div class="kpi-value loading">—</div><div class="kpi-footer"><span class="kpi-change">—</span><span class="kpi-sub">cap</span></div></div>
+    </div>
+
+    <div class="grid-12">
+      <div class="panel panel-pad col-8">
+        <div class="section-title">
+          <div>
+            <div class="section-title-text">SUPPLY MODEL <span class="source-tag demo">▲ MODELED</span></div>
+            <div class="section-title-sub">From live circulating · 60-month projection</div>
+          </div>
+          <select id="tokenomics-asset" style="background: var(--bg-elev); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px;">
+            <option value="bitcoin">BTC</option>
+            <option value="ethereum" selected>ETH</option>
+            <option value="solana">SOL</option>
+            <option value="chainlink">LINK</option>
+            <option value="uniswap">UNI</option>
+            <option value="aave">AAVE</option>
+            <option value="avalanche-2">AVAX</option>
+          </select>
+        </div>
+        <div style="height: 280px;"><canvas id="supply-chart"></canvas></div>
+      </div>
+
+      <div class="panel panel-pad col-4">
+        <div class="section-title"><div><div class="section-title-text">DRIVER ASSUMPTIONS</div><div class="section-title-sub">Editable</div></div></div>
+        <div class="slider-row">
+          <div class="slider-head"><span class="slider-label">EMISSION %/YR</span><span class="slider-val" id="emission-val">2.00%</span></div>
+          <input type="range" min="0" max="100" step="1" value="20" id="emission-slider" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span class="slider-label">BURN %/YR</span><span class="slider-val" id="burn-val">1.20%</span></div>
+          <input type="range" min="0" max="50" value="12" id="burn-slider" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span class="slider-label">STAKING RATIO</span><span class="slider-val" id="staking-val">28%</span></div>
+          <input type="range" min="0" max="80" value="28" id="staking-slider" />
+        </div>
+        <div style="background: var(--bg-elev); padding: 12px; border: 1px solid var(--border); margin-top: 8px;">
+          <div style="font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-bottom: 8px;">MODEL OUTPUT</div>
+          <div style="display: flex; justify-content: space-between; padding: 4px 0; font-size: 10px; font-family: 'JetBrains Mono', monospace;"><span style="color: var(--text-dim)">Net inflation Y5</span><span id="out-inflation">0.80%</span></div>
+          <div style="display: flex; justify-content: space-between; padding: 4px 0; font-size: 10px; font-family: 'JetBrains Mono', monospace;"><span style="color: var(--text-dim)">Staking yield (impl.)</span><span style="color: var(--emerald)" id="out-yield">5.76%</span></div>
+          <div style="display: flex; justify-content: space-between; padding: 4px 0; font-size: 10px; font-family: 'JetBrains Mono', monospace;"><span style="color: var(--text-dim)">Effective dilution</span><span style="color: var(--cyan)" id="out-dilution">0.58%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COPILOT ===== -->
+  <div class="module" id="module-copilot">
+    <div class="grid-12">
+      <div class="panel panel-pad col-3" style="height: fit-content;">
+        <div class="section-title"><div><div class="section-title-text">WORKFLOWS</div><div class="section-title-sub">Portfolio-aware</div></div></div>
+        <div style="margin-top: 12px;">
+          <button class="copilot-side-btn" data-q="Analyze my portfolio">📊 Analyze my portfolio</button>
+          <button class="copilot-side-btn" data-q="What are my biggest risks?">⚠ Portfolio risks</button>
+          <button class="copilot-side-btn" data-q="How should I rebalance?">↻ Rebalance suggestions</button>
+          <button class="copilot-side-btn" data-q="Summarize current market state">🌐 Market state</button>
+          <button class="copilot-side-btn" data-q="Top DeFi opportunities">🏛 DeFi opportunities</button>
+          <button class="copilot-side-btn" data-q="Best risk-adjusted returns last 30d">📈 Risk-adjusted screen</button>
+          <button class="copilot-side-btn" data-q="What's overvalued?">📉 Overvalued screen</button>
+          <button class="copilot-side-btn" data-q="What's undervalued?">📊 Undervalued screen</button>
+        </div>
+      </div>
+
+      <div class="panel col-9 copilot-panel">
+        <div class="copilot-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="live-dot"></div>
+            <span style="font-family: 'Fraunces', serif; font-size: 14px; color: var(--text); font-weight: 500;">Aurelius Analyst</span>
+            <span class="tag amber">PORTFOLIO-AWARE</span>
+          </div>
+          <span style="font-size: 10px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace">heuristic engine · uses live data</span>
+        </div>
+        <div class="copilot-messages" id="copilot-messages">
+          <div class="msg-system">Analyst online. I read live CoinGecko + DefiLlama data AND your portfolio. For full LLM synthesis, deploy this with a backend proxy + OpenAI/Anthropic key.</div>
+        </div>
+        <div class="copilot-input">
+          <input type="text" id="copilot-input" placeholder="Ask about your portfolio or market..." />
+          <button id="copilot-send">EXECUTE →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span>AURELIUS v3 · CoinGecko + DefiLlama · Live · LocalStorage portfolio</span>
+    <span>NOT INVESTMENT ADVICE · DATA AS-IS · © 2026</span>
+  </footer>
+</main>
+</div>
+</div>
+
+<script>
+// ============ CONFIG ============
+const COLORS = {
+  bg: '#0A0E1A', bgElev: '#0F1420', bgCard: '#131826', bgHover: '#1A2030',
+  border: '#1F2638', borderLight: '#2A3349',
+  text: '#E8ECF4', textDim: '#8B95A8', textMute: '#5A6478',
+  amber: '#F59E0B', emerald: '#10B981', red: '#EF4444',
+  cyan: '#06B6D4', violet: '#8B5CF6', navy: '#1E3A8A',
+};
+const CG = 'https://api.coingecko.com/api/v3';
+const DL = 'https://api.llama.fi';
+const REFRESH_MS = 60_000;
+
+// ============ SECTOR / NARRATIVE MAPS ============
+// Sector classification - what kind of protocol this is
+const SECTOR_MAP = {
+  bitcoin: 'BTC', ethereum: 'L1', solana: 'L1', cardano: 'L1', 'avalanche-2': 'L1',
+  polkadot: 'L1', cosmos: 'L1', near: 'L1', algorand: 'L1', sui: 'L1', aptos: 'L1',
+  tron: 'L1', 'binancecoin': 'L1', ton: 'L1', toncoin: 'L1', hedera: 'L1',
+  'matic-network': 'L2', arbitrum: 'L2', optimism: 'L2', mantle: 'L2', polygon: 'L2',
+  uniswap: 'DEX', 'pancakeswap-token': 'DEX', curve: 'DEX', sushi: 'DEX', 'curve-dao-token': 'DEX',
+  aave: 'Lending', maker: 'Lending', 'compound-governance-token': 'Lending', 'just': 'Lending',
+  chainlink: 'Oracle', 'band-protocol': 'Oracle', 'api3': 'Oracle',
+  'lido-dao': 'LST', 'rocket-pool': 'LST',
+  'render-token': 'AI/DePIN', 'fetch-ai': 'AI/DePIN', 'singularitynet': 'AI/DePIN', 'bittensor': 'AI/DePIN', 'helium': 'AI/DePIN', 'akash-network': 'AI/DePIN', 'theta-token': 'AI/DePIN', 'arweave': 'AI/DePIN', 'filecoin': 'AI/DePIN',
+  tether: 'Stable', 'usd-coin': 'Stable', dai: 'Stable', 'first-digital-usd': 'Stable',
+  ondo: 'RWA', 'maple': 'RWA', 'mantra': 'RWA',
+  dogecoin: 'Meme', 'shiba-inu': 'Meme', 'pepe': 'Meme', 'bonk': 'Meme', 'dogwifcoin': 'Meme', 'floki': 'Meme',
+  'ripple': 'Payments', 'stellar': 'Payments', 'litecoin': 'Payments',
+  'eos': 'Smart Contract', 'tezos': 'Smart Contract',
+  'monero': 'Privacy', 'zcash': 'Privacy',
+};
+
+// Narrative: thematic exposure (independent of sector)
+const NARRATIVE_MAP = {
+  'render-token': ['AI'], 'fetch-ai': ['AI'], 'singularitynet': ['AI'], 'bittensor': ['AI'], 'akash-network': ['AI'],
+  'helium': ['DePIN'], 'arweave': ['DePIN'], 'filecoin': ['DePIN'], 'theta-token': ['DePIN'],
+  'lido-dao': ['LST', 'Restaking'], 'rocket-pool': ['LST'],
+  'ondo': ['RWA'], 'mantra': ['RWA'],
+  'arbitrum': ['L2 narrative'], 'optimism': ['L2 narrative'], 'mantle': ['L2 narrative'],
+  'solana': ['SOL ecosystem'], 'bonk': ['SOL ecosystem'], 'dogwifcoin': ['SOL ecosystem'],
+  'dogecoin': ['Meme'], 'shiba-inu': ['Meme'], 'pepe': ['Meme'], 'bonk': ['Meme'], 'dogwifcoin': ['Meme'], 'floki': ['Meme'],
+  'ethereum': ['ETH ecosystem'], 'uniswap': ['ETH ecosystem'], 'aave': ['ETH ecosystem'], 'maker': ['ETH ecosystem'], 'chainlink': ['ETH ecosystem'],
+};
+
+function getSector(id) { return SECTOR_MAP[id] || 'Other'; }
+function getNarratives(id) { return NARRATIVE_MAP[id] || []; }
+
+// ============ STATE ============
+const state = {
+  global: null,
+  protocols: [],
+  defiProtocols: [],
+  chains: [],
+  btcHistory: null,
+  portfolio: [], // { id, symbol, name, image, qty, avgCost }
+  portfolioHistories: {}, // id -> [prices]
+  errors: [],
+  sortKey: 'market_cap',
+  sortDir: 'desc',
+  lastPrices: {}, // for flash detection
+};
+
+// ============ STORAGE ============
+function loadPortfolio() {
+  try {
+    const raw = localStorage.getItem('aurelius_portfolio');
+    if (raw) state.portfolio = JSON.parse(raw);
+  } catch (e) { console.warn('Portfolio load failed', e); }
+}
+function savePortfolio() {
+  try { localStorage.setItem('aurelius_portfolio', JSON.stringify(state.portfolio)); }
+  catch (e) { console.warn('Portfolio save failed', e); }
+}
+
+// ============ FORMATTERS ============
+const fmt = {
+  bn: (n) => {
+    if (n == null || isNaN(n)) return '—';
+    const a = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (a >= 1e12) return sign + '$' + (a / 1e12).toFixed(2) + 'T';
+    if (a >= 1e9) return sign + '$' + (a / 1e9).toFixed(2) + 'B';
+    if (a >= 1e6) return sign + '$' + (a / 1e6).toFixed(2) + 'M';
+    if (a >= 1e3) return sign + '$' + (a / 1e3).toFixed(2) + 'K';
+    return sign + '$' + a.toFixed(2);
+  },
+  price: (n) => {
+    if (n == null || isNaN(n)) return '—';
+    if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    if (n >= 1) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    if (n >= 0.01) return '$' + n.toFixed(4);
+    return '$' + n.toFixed(6);
+  },
+  pct: (n) => {
+    if (n == null || isNaN(n)) return '—';
+    return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+  },
+  num: (n) => {
+    if (n == null || isNaN(n)) return '—';
+    const a = Math.abs(n);
+    if (a >= 1e9) return (a / 1e9).toFixed(2) + 'B';
+    if (a >= 1e6) return (a / 1e6).toFixed(2) + 'M';
+    if (a >= 1e3) return (a / 1e3).toFixed(1) + 'K';
+    return n.toFixed(0);
+  },
+};
+
+// ============ FETCH ============
+async function fetchJSON(url, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await fetch(url);
+      if (r.status === 429) {
+        await new Promise(res => setTimeout(res, 2500 * (i + 1)));
+        continue;
+      }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch (e) {
+      if (i === retries) throw e;
+      await new Promise(res => setTimeout(res, 700 * (i + 1)));
+    }
+  }
+}
+
+function setStatus() {
+  const dot = document.getElementById('status-dot');
+  if (state.errors.length > 2) dot.className = 'live-dot error';
+  else if (state.errors.length > 0) dot.className = 'live-dot degraded';
+  else dot.className = 'live-dot';
+}
+
+// ============ DATA LOADERS ============
+async function fetchGlobal() {
+  try {
+    const data = await fetchJSON(`${CG}/global`);
+    state.global = data.data;
+    renderGlobalKPIs();
+  } catch (e) { state.errors.push('global'); setStatus(); }
+}
+
+async function fetchProtocols() {
+  try {
+    const data = await fetchJSON(`${CG}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=24h,7d,30d`);
+    // Flash detect
+    data.forEach(p => {
+      const prev = state.lastPrices[p.id];
+      if (prev != null && Math.abs((p.current_price - prev) / prev) > 0.001) {
+        p._flash = p.current_price > prev ? 'up' : 'down';
+      }
+      state.lastPrices[p.id] = p.current_price;
+    });
+    state.protocols = data;
+    document.getElementById('universe-count').textContent = `Universe: ${data.length} protocols`;
+    document.getElementById('last-sync').textContent = `Sync: ${new Date().toLocaleTimeString()}`;
+    renderTicker();
+    renderLeaderboard();
+    renderHeatmap();
+    refreshPortfolio();
+  } catch (e) { state.errors.push('markets'); setStatus(); }
+}
+
+async function fetchBTC(days = 30) {
+  try {
+    const data = await fetchJSON(`${CG}/coins/bitcoin/market_chart?vs_currency=usd&days=${days}`);
+    state.btcHistory = data.prices;
+    renderBTC();
+  } catch (e) { state.errors.push('btc'); setStatus(); }
+}
+
+async function fetchDefi() {
+  try {
+    const protocols = await fetchJSON(`${DL}/protocols`);
+    state.defiProtocols = protocols.filter(p => p.tvl > 0).sort((a, b) => b.tvl - a.tvl);
+    const chainMap = new Map();
+    const catMap = new Map();
+    state.defiProtocols.forEach(p => {
+      if (p.chains) p.chains.forEach(c => chainMap.set(c, (chainMap.get(c) || 0) + (p.tvl / p.chains.length)));
+      if (p.category) catMap.set(p.category, (catMap.get(p.category) || 0) + p.tvl);
+    });
+    state.chains = [...chainMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    state.categories = [...catMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    renderDefiKPIs();
+    renderDefiTable();
+    if (document.getElementById('module-defi').classList.contains('active')) renderChainChart();
+  } catch (e) { state.errors.push('defi'); setStatus(); }
+}
+
+async function fetchTVL() {
+  try {
+    const data = await fetchJSON(`${DL}/v2/historicalChainTvl`);
+    state.tvlHistory = data;
+    updateTVLKPI();
+    if (document.getElementById('module-defi').classList.contains('active')) renderTVL();
+  } catch (e) { state.errors.push('tvl'); setStatus(); }
+}
+
+// ============ RENDER: GLOBAL ============
+function renderGlobalKPIs() {
+  if (!state.global) return;
+  const g = state.global;
+  setKPI('kpi-mcap', fmt.bn(g.total_market_cap.usd), g.market_cap_change_percentage_24h_usd);
+  setKPI('kpi-vol', fmt.bn(g.total_volume.usd), null);
+  setKPI('kpi-btcdom', g.market_cap_percentage.btc.toFixed(2) + '%', null);
+
+  const chg = g.market_cap_change_percentage_24h_usd;
+  let regime, color;
+  if (chg > 5) { regime = 'GREED'; color = 'emerald'; }
+  else if (chg > 2) { regime = 'BULLISH'; color = 'emerald'; }
+  else if (chg > -2) { regime = 'NEUTRAL'; color = 'amber'; }
+  else if (chg > -5) { regime = 'CAUTIOUS'; color = 'amber'; }
+  else { regime = 'FEAR'; color = 'red'; }
+  const fgEl = document.getElementById('kpi-fearGreed');
+  fgEl.querySelector('.kpi-value').textContent = regime;
+  fgEl.querySelector('.kpi-value').classList.remove('loading');
+  fgEl.querySelector('.kpi-value').style.color = `var(--${color})`;
+  fgEl.querySelector('.kpi-change').textContent = chg >= 0 ? `▲ ${chg.toFixed(2)}%` : `▼ ${Math.abs(chg).toFixed(2)}%`;
+  fgEl.querySelector('.kpi-change').className = 'kpi-change ' + (chg >= 0 ? 'up' : 'down');
+}
+
+function setKPI(id, value, change) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const valEl = el.querySelector('.kpi-value');
+  const chgEl = el.querySelector('.kpi-change');
+  valEl.textContent = value;
+  valEl.classList.remove('loading');
+  if (change != null && chgEl) {
+    chgEl.textContent = (change >= 0 ? '▲ ' : '▼ ') + Math.abs(change).toFixed(2) + '%';
+    chgEl.className = 'kpi-change ' + (change >= 0 ? 'up' : 'down');
+  }
+}
+
+// ============ TICKER ============
+function renderTicker() {
+  const top = state.protocols.slice(0, 25);
+  const items = top.concat(top).map(p => `
+    <span class="ticker-item">
+      <img src="${p.image}" onerror="this.style.display='none'" />
+      <span class="ticker-ticker">${p.symbol.toUpperCase()}</span>
+      <span class="ticker-price">${fmt.price(p.current_price)}</span>
+      <span class="ticker-change ${(p.price_change_percentage_24h || 0) >= 0 ? 'up' : 'down'}">${fmt.pct(p.price_change_percentage_24h)}</span>
+    </span>
+  `).join('');
+  document.getElementById('ticker-scroll').innerHTML = items;
+}
+
+// ============ HEATMAP ============
+function renderHeatmap() {
+  const sectorAgg = {};
+  state.protocols.forEach(p => {
+    const sec = getSector(p.id);
+    if (!sectorAgg[sec]) sectorAgg[sec] = { totalCap: 0, weightedChg: 0 };
+    sectorAgg[sec].totalCap += p.market_cap;
+    sectorAgg[sec].weightedChg += (p.price_change_percentage_24h || 0) * p.market_cap;
+  });
+  const sectors = Object.entries(sectorAgg)
+    .map(([s, v]) => ({ sector: s, mcap: v.totalCap, chg: v.weightedChg / v.totalCap }))
+    .filter(s => s.sector !== 'Other')
+    .sort((a, b) => b.mcap - a.mcap)
+    .slice(0, 9);
+
+  const html = sectors.map(s => {
+    const intensity = Math.min(Math.abs(s.chg) / 8, 1);
+    const bg = s.chg >= 0 ? `rgba(16, 185, 129, ${0.1 + intensity * 0.4})` : `rgba(239, 68, 68, ${0.1 + intensity * 0.4})`;
+    return `
+      <div style="padding: 12px 8px; background: ${bg}; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 70px;">
+        <div style="font-size: 9px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;">${s.sector}</div>
+        <div>
+          <div style="font-size: 13px; color: ${s.chg >= 0 ? 'var(--emerald)' : 'var(--red)'}; font-family: 'JetBrains Mono', monospace; font-weight: 500;">${fmt.pct(s.chg)}</div>
+          <div style="font-size: 9px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace;">${fmt.bn(s.mcap)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('heatmap').innerHTML = html;
+}
+
+// ============ LEADERBOARD with sortable & sparklines ============
+function sortProtocols() {
+  const k = state.sortKey;
+  const d = state.sortDir === 'asc' ? 1 : -1;
+  return [...state.protocols].sort((a, b) => {
+    const av = a[k] ?? 0;
+    const bv = b[k] ?? 0;
+    if (typeof av === 'string') return av.localeCompare(bv) * d;
+    return (av - bv) * d;
+  });
+}
+
+function renderLeaderboard() {
+  if (!state.protocols.length) return;
+  const sorted = sortProtocols().slice(0, 50);
+
+  const html = sorted.map((p, i) => {
+    const chg24 = p.price_change_percentage_24h || 0;
+    const chg7 = p.price_change_percentage_7d_in_currency || 0;
+    const inPort = state.portfolio.some(h => h.id === p.id);
+    const flashClass = p._flash === 'up' ? 'flash-up' : p._flash === 'down' ? 'flash-down' : '';
+    p._flash = null;
+
+    return `
+      <div class="tbl-row lb-row${i % 2 === 1 ? ' alt' : ''} ${flashClass}" data-protocol-id="${p.id}">
+        <span style="color: var(--text-mute)">${String(i + 1).padStart(2, '0')}</span>
+        <div class="lb-token">
+          <img src="${p.image}" alt="" onerror="this.style.display='none'" />
+          <span style="color: var(--text)">${p.symbol.toUpperCase()}</span>
+          <span class="lb-name">${p.name}</span>
+        </div>
+        <span class="text-right" style="color: var(--text)">${fmt.price(p.current_price)}</span>
+        <span class="text-right" style="color: var(--text)">${fmt.bn(p.market_cap)}</span>
+        <span class="text-right" style="color: ${chg24 >= 0 ? 'var(--emerald)' : 'var(--red)'}">${fmt.pct(chg24)}</span>
+        <span class="text-right" style="color: ${chg7 >= 0 ? 'var(--emerald)' : 'var(--red)'}">${fmt.pct(chg7)}</span>
+        <span class="text-right" style="color: var(--text-dim)">${fmt.bn(p.total_volume)}</span>
+        <span class="text-right"><canvas class="spark" data-id="${p.id}"></canvas></span>
+        <span class="text-right">
+          ${inPort
+            ? '<span class="tag emerald">✓ IN PORT</span>'
+            : `<button class="btn-secondary" style="padding: 3px 8px; font-size: 9px" data-add="${p.id}">+ ADD</button>`}
+        </span>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('leaderboard').innerHTML = html;
+  document.getElementById('lb-count').textContent = `Top 50 of ${state.protocols.length}`;
+
+  // Render sparklines
+  sorted.forEach(p => {
+    if (!p.sparkline_in_7d?.price) return;
+    const canvas = document.querySelector(`.spark[data-id="${p.id}"]`);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = 70;
+    const h = canvas.height = 20;
+    const data = p.sparkline_in_7d.price;
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+    const chg7 = p.price_change_percentage_7d_in_currency || 0;
+    ctx.strokeStyle = chg7 >= 0 ? COLORS.emerald : COLORS.red;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = (i / (data.length - 1)) * w;
+      const y = h - ((v - min) / range) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+
+  // Wire ADD buttons
+  document.querySelectorAll('[data-add]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.add;
+      const proto = state.protocols.find(p => p.id === id);
+      if (proto) {
+        addHolding(proto, 0, 0); // user can edit after
+        showModule('portfolio');
+      }
+    });
+  });
+}
+
+// Sort handlers
+document.querySelectorAll('.sortable').forEach(h => {
+  h.addEventListener('click', () => {
+    const key = h.dataset.sort;
+    if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+    else { state.sortKey = key; state.sortDir = 'desc'; }
+    document.querySelectorAll('.sortable').forEach(s => s.classList.remove('active'));
+    h.classList.add('active');
+    h.innerHTML = h.textContent.replace(/[▼▲]/, '').trim() + ' ' + (state.sortDir === 'desc' ? '▼' : '▲');
+    renderLeaderboard();
+  });
+});
+
+// ============ BTC ============
+let charts = {};
+Chart.defaults.color = COLORS.textMute;
+Chart.defaults.borderColor = COLORS.border;
+Chart.defaults.font.family = 'JetBrains Mono, monospace';
+Chart.defaults.font.size = 9;
+
+const gridConfig = { color: COLORS.border, drawBorder: false, borderDash: [2, 4] };
+const axisConfig = {
+  ticks: { color: COLORS.textMute, font: { size: 9, family: 'JetBrains Mono' } },
+  grid: gridConfig, border: { display: false },
+};
+const tooltipConfig = {
+  backgroundColor: COLORS.bgElev, borderColor: COLORS.borderLight, borderWidth: 1,
+  titleColor: COLORS.text, bodyColor: COLORS.textDim,
+  titleFont: { family: 'JetBrains Mono', size: 11 },
+  bodyFont: { family: 'JetBrains Mono', size: 10 },
+  padding: 10, cornerRadius: 0,
+};
+
+function renderBTC() {
+  if (!state.btcHistory) return;
+  if (charts.btc) charts.btc.destroy();
+  const ctx = document.getElementById('btc-chart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 280);
+  grad.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
+  grad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+
+  const prices = state.btcHistory.map(p => p[1]);
+  const current = prices[prices.length - 1];
+  const first = prices[0];
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const chgPct = ((current - first) / first) * 100;
+  document.getElementById('btc-stats').textContent =
+    `Current ${fmt.price(current)} · Range ${fmt.price(min)} – ${fmt.price(max)} · ${fmt.pct(chgPct)} period`;
+
+  charts.btc = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: state.btcHistory.map(p => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      datasets: [{
+        data: prices,
+        borderColor: COLORS.amber, backgroundColor: grad, borderWidth: 1.5,
+        pointRadius: 0, fill: true, tension: 0.25,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { ...tooltipConfig, callbacks: { label: ctx => 'BTC: ' + fmt.price(ctx.parsed.y) } } },
+      scales: {
+        x: { ...axisConfig, ticks: { ...axisConfig.ticks, maxTicksLimit: 8 } },
+        y: { ...axisConfig, ticks: { ...axisConfig.ticks, callback: v => '$' + (v / 1000).toFixed(0) + 'K' } },
+      },
+    },
+  });
+}
+
+// ============ PORTFOLIO ============
+function refreshPortfolio() {
+  if (!state.protocols.length) return;
+  // Update prices for held positions
+  state.portfolio.forEach(h => {
+    const live = state.protocols.find(p => p.id === h.id);
+    if (live) {
+      h.currentPrice = live.current_price;
+      h.priceChange24h = live.price_change_percentage_24h;
+      h.image = live.image;
+      h.symbol = live.symbol.toUpperCase();
+      h.name = live.name;
+    }
+  });
+  renderPortfolio();
+  renderSidebarPortfolio();
+  if (document.getElementById('module-reco').classList.contains('active')) renderRecommendations();
+}
+
+function addHolding(proto, qty = 0, avgCost = 0) {
+  const existing = state.portfolio.find(h => h.id === proto.id);
+  if (existing) {
+    existing.qty = (existing.qty || 0) + qty;
+    if (qty > 0 && avgCost > 0) {
+      const totalCost = (existing.qty - qty) * existing.avgCost + qty * avgCost;
+      existing.avgCost = totalCost / existing.qty;
+    }
+  } else {
+    state.portfolio.push({
+      id: proto.id,
+      symbol: proto.symbol.toUpperCase(),
+      name: proto.name,
+      image: proto.image,
+      qty: qty || 0,
+      avgCost: avgCost || proto.current_price,
+      currentPrice: proto.current_price,
+    });
+  }
+  savePortfolio();
+  refreshPortfolio();
+}
+
+function removeHolding(id) {
+  state.portfolio = state.portfolio.filter(h => h.id !== id);
+  savePortfolio();
+  refreshPortfolio();
+}
+
+function updateHolding(id, field, value) {
+  const h = state.portfolio.find(x => x.id === id);
+  if (h) {
+    h[field] = parseFloat(value) || 0;
+    savePortfolio();
+    refreshPortfolio();
+  }
+}
+
+function renderPortfolio() {
+  const list = document.getElementById('holdings-list');
+  const stats = document.getElementById('port-stats');
+  const banner = document.getElementById('port-empty-banner');
+  if (!state.portfolio.length) {
+    list.innerHTML = '<div class="empty-state">No holdings yet. Add one above or click an asset in the leaderboard.</div>';
+    stats.style.display = 'none';
+    banner.style.display = 'flex';
+    return;
+  }
+  stats.style.display = 'grid';
+  banner.style.display = 'none';
+
+  // Compute stats
+  let totalValue = 0, totalCost = 0, total24h = 0;
+  state.portfolio.forEach(h => {
+    const value = (h.qty || 0) * (h.currentPrice || 0);
+    const cost = (h.qty || 0) * (h.avgCost || 0);
+    totalValue += value;
+    totalCost += cost;
+    total24h += value * ((h.priceChange24h || 0) / 100);
+  });
+  const totalPnl = totalValue - totalCost;
+  const pnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+
+  document.getElementById('ps-value').textContent = fmt.bn(totalValue);
+  document.getElementById('ps-cost').textContent = fmt.bn(totalCost);
+  const pnlEl = document.getElementById('ps-pnl');
+  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + fmt.bn(totalPnl) + ' (' + fmt.pct(pnlPct) + ')';
+  pnlEl.style.color = totalPnl >= 0 ? 'var(--emerald)' : 'var(--red)';
+  const dailyEl = document.getElementById('ps-24h');
+  const dailyPct = totalValue > 0 ? (total24h / totalValue) * 100 : 0;
+  dailyEl.textContent = (total24h >= 0 ? '+' : '') + fmt.bn(total24h) + ' (' + fmt.pct(dailyPct) + ')';
+  dailyEl.style.color = total24h >= 0 ? 'var(--emerald)' : 'var(--red)';
+
+  // Render rows
+  const html = state.portfolio.map((h, i) => {
+    const value = (h.qty || 0) * (h.currentPrice || 0);
+    const cost = (h.qty || 0) * (h.avgCost || 0);
+    const pnl = value - cost;
+    const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+    const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
+    return `
+      <div class="tbl-row port-row${i % 2 === 1 ? ' alt' : ''}">
+        <img src="${h.image || ''}" style="width: 18px; height: 18px; border-radius: 50%;" onerror="this.style.display='none'" />
+        <div class="lb-token">
+          <span style="color: var(--text)">${h.symbol}</span>
+          <span class="lb-name">${h.name}</span>
+        </div>
+        <span class="text-right" style="color: var(--text)">${fmt.price(h.currentPrice)}</span>
+        <input type="number" step="any" min="0" value="${h.qty || ''}" data-id="${h.id}" data-field="qty" />
+        <input type="number" step="any" min="0" value="${h.avgCost || ''}" data-id="${h.id}" data-field="avgCost" />
+        <span class="text-right" style="color: var(--text)">${fmt.bn(value)}</span>
+        <span class="text-right" style="color: ${pnl >= 0 ? 'var(--emerald)' : 'var(--red)'}">${(pnl >= 0 ? '+' : '') + fmt.bn(pnl)}<br><span style="font-size: 9px;">${fmt.pct(pnlPct)}</span></span>
+        <span class="text-right" style="color: var(--amber)">${weight.toFixed(1)}%</span>
+        <button class="remove" data-remove="${h.id}">×</button>
+      </div>
+    `;
+  }).join('');
+  list.innerHTML = html;
+  document.getElementById('holdings-sub').textContent = `${state.portfolio.length} holdings · ${fmt.bn(totalValue)} value · click to edit inline`;
+
+  // Wire events
+  list.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', () => updateHolding(inp.dataset.id, inp.dataset.field, inp.value));
+  });
+  list.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (confirm('Remove this holding?')) removeHolding(btn.dataset.remove);
+    });
+  });
+
+  renderPortfolioCharts();
+}
+
+function renderPortfolioCharts() {
+  // Allocation pie
+  if (charts.alloc) charts.alloc.destroy();
+  if (charts.perf) charts.perf.destroy();
+
+  if (!state.portfolio.length) return;
+  const palette = [COLORS.amber, COLORS.emerald, COLORS.cyan, COLORS.violet, COLORS.red, COLORS.navy, '#84cc16', '#ec4899'];
+  const data = state.portfolio.map(h => (h.qty || 0) * (h.currentPrice || 0));
+  const labels = state.portfolio.map(h => h.symbol);
+
+  const allocCanvas = document.getElementById('port-alloc-chart');
+  if (allocCanvas) {
+    charts.alloc = new Chart(allocCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: state.portfolio.map((_, i) => palette[i % palette.length]),
+          borderColor: COLORS.bgCard, borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        plugins: { legend: { position: 'right', labels: { color: COLORS.textDim, font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 8 } }, tooltip: { ...tooltipConfig, callbacks: { label: c => `${c.label}: ${fmt.bn(c.parsed)} (${(c.parsed / data.reduce((a,b)=>a+b,0) * 100).toFixed(1)}%)` } } },
+      },
+    });
+  }
+
+  // Perf chart: backtest using sparkline data (7d) as proxy
+  // Build a weighted index from sparklines
+  const perfCanvas = document.getElementById('port-perf-chart');
+  if (perfCanvas) {
+    const totalValue = data.reduce((a, b) => a + b, 0);
+    if (totalValue > 0) {
+      const histories = state.portfolio.map(h => {
+        const proto = state.protocols.find(p => p.id === h.id);
+        return proto?.sparkline_in_7d?.price || null;
+      });
+      const validHistories = histories.filter(Boolean);
+      if (validHistories.length > 0) {
+        const len = Math.min(...validHistories.map(h => h.length));
+        const weights = state.portfolio.map((h, i) => {
+          if (!histories[i]) return 0;
+          return ((h.qty || 0) * (h.currentPrice || 0)) / totalValue;
+        });
+        const weightSum = weights.reduce((a, b) => a + b, 0) || 1;
+
+        const indexed = [];
+        for (let t = 0; t < len; t++) {
+          let val = 0;
+          state.portfolio.forEach((h, i) => {
+            const hist = histories[i];
+            if (!hist) return;
+            const startPrice = hist[0];
+            const curPrice = hist[t];
+            val += (weights[i] / weightSum) * (curPrice / startPrice) * 100;
+          });
+          indexed.push(val);
+        }
+
+        const ctx = perfCanvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 240);
+        const lastVal = indexed[indexed.length - 1];
+        grad.addColorStop(0, lastVal >= 100 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)');
+        grad.addColorStop(1, lastVal >= 100 ? 'rgba(16, 185, 129, 0)' : 'rgba(239, 68, 68, 0)');
+
+        charts.perf = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: indexed.map((_, i) => i),
+            datasets: [{
+              data: indexed,
+              borderColor: lastVal >= 100 ? COLORS.emerald : COLORS.red,
+              backgroundColor: grad,
+              borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.25,
+            }],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { ...tooltipConfig, callbacks: { label: ctx => 'Index: ' + ctx.parsed.y.toFixed(2) } } },
+            scales: {
+              x: { display: false },
+              y: { ...axisConfig, ticks: { ...axisConfig.ticks, callback: v => v.toFixed(0) } },
+            },
+          },
+        });
+      }
+    }
+  }
+}
+
+function renderSidebarPortfolio() {
+  let totalValue = 0, totalCost = 0;
+  state.portfolio.forEach(h => {
+    totalValue += (h.qty || 0) * (h.currentPrice || 0);
+    totalCost += (h.qty || 0) * (h.avgCost || 0);
+  });
+  document.getElementById('sps-value').textContent = totalValue > 0 ? fmt.bn(totalValue) : 'Empty';
+  document.getElementById('sps-count').textContent = state.portfolio.length;
+  document.getElementById('sps-cost').textContent = fmt.bn(totalCost);
+  const pnl = totalValue - totalCost;
+  const pnlEl = document.getElementById('sps-pnl');
+  pnlEl.textContent = totalCost > 0 ? ((pnl >= 0 ? '+' : '') + fmt.bn(pnl)) : '—';
+  pnlEl.style.color = pnl >= 0 ? 'var(--emerald)' : 'var(--red)';
+
+  const chgEl = document.getElementById('sps-change');
+  if (totalCost > 0) {
+    const pct = (pnl / totalCost) * 100;
+    chgEl.textContent = `${(pct >= 0 ? '▲' : '▼')} ${Math.abs(pct).toFixed(2)}% unrealized`;
+    chgEl.style.color = pct >= 0 ? 'var(--emerald)' : 'var(--red)';
+  } else {
+    chgEl.textContent = '—';
+    chgEl.style.color = 'var(--text-mute)';
+  }
+}
+
+// ============ ADD HOLDING FORM ============
+const addAssetInput = document.getElementById('add-asset');
+const addQtyInput = document.getElementById('add-qty');
+const addCostInput = document.getElementById('add-cost');
+const assetSuggest = document.getElementById('asset-suggest');
+let selectedAsset = null;
+
+addAssetInput.addEventListener('input', () => {
+  const q = addAssetInput.value.toLowerCase();
+  if (!q || !state.protocols.length) {
+    assetSuggest.classList.remove('active');
+    return;
+  }
+  const matches = state.protocols.filter(p =>
+    p.name.toLowerCase().includes(q) || p.symbol.toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!matches.length) {
+    assetSuggest.classList.remove('active');
+    return;
+  }
+  assetSuggest.innerHTML = matches.map(p => `
+    <div class="asset-suggest-item" data-id="${p.id}">
+      <img src="${p.image}" onerror="this.style.display='none'" />
+      <span style="color: var(--text)">${p.symbol.toUpperCase()}</span>
+      <span style="color: var(--text-dim)">${p.name}</span>
+      <span style="margin-left: auto; color: var(--text-dim)">${fmt.price(p.current_price)}</span>
+    </div>
+  `).join('');
+  assetSuggest.classList.add('active');
+  assetSuggest.querySelectorAll('.asset-suggest-item').forEach(it => {
+    it.addEventListener('click', () => {
+      const id = it.dataset.id;
+      selectedAsset = state.protocols.find(p => p.id === id);
+      addAssetInput.value = selectedAsset.symbol.toUpperCase() + ' · ' + selectedAsset.name;
+      if (!addCostInput.value) addCostInput.value = selectedAsset.current_price.toFixed(4);
+      assetSuggest.classList.remove('active');
+    });
+  });
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.add-holding-form-wrap')) assetSuggest.classList.remove('active');
+});
+
+document.getElementById('add-btn').addEventListener('click', () => {
+  if (!selectedAsset) {
+    alert('Pick an asset from the search dropdown first.');
+    return;
+  }
+  const qty = parseFloat(addQtyInput.value);
+  const cost = parseFloat(addCostInput.value);
+  if (!qty || qty <= 0) { alert('Enter quantity > 0'); return; }
+  if (!cost || cost <= 0) { alert('Enter avg cost > 0'); return; }
+  addHolding(selectedAsset, qty, cost);
+  addAssetInput.value = ''; addQtyInput.value = ''; addCostInput.value = '';
+  selectedAsset = null;
+});
+
+// ============ RECOMMENDATIONS ENGINE ============
+function renderRecommendations() {
+  if (!state.portfolio.length || !state.protocols.length) {
+    document.getElementById('risk-bars').innerHTML = '<div class="empty-state">Add holdings to see analysis</div>';
+    document.getElementById('reco-list').innerHTML = '<div class="empty-state">Add holdings to receive recommendations.</div>';
+    document.getElementById('risk-score').textContent = '—';
+    document.getElementById('risk-score-grade').textContent = 'No portfolio';
+    document.getElementById('sector-exposure').innerHTML = '';
+    document.getElementById('narrative-exposure').innerHTML = '';
+    document.getElementById('target-allocation').innerHTML = '<div style="color: var(--text-mute)">No portfolio loaded.</div>';
+    return;
+  }
+
+  // Compute total value & weights
+  let totalValue = 0;
+  const holdings = state.portfolio.map(h => {
+    const v = (h.qty || 0) * (h.currentPrice || 0);
+    totalValue += v;
+    return { ...h, value: v };
+  });
+  if (totalValue === 0) {
+    document.getElementById('reco-list').innerHTML = '<div class="empty-state">Set quantities and avg cost to see analysis.</div>';
+    return;
+  }
+  holdings.forEach(h => h.weight = h.value / totalValue);
+
+  // Sector exposure
+  const sectorExp = {};
+  holdings.forEach(h => {
+    const s = getSector(h.id);
+    sectorExp[s] = (sectorExp[s] || 0) + h.weight;
+  });
+  const sortedSectors = Object.entries(sectorExp).sort((a, b) => b[1] - a[1]);
+
+  // Narrative exposure
+  const narrExp = {};
+  holdings.forEach(h => {
+    const ns = getNarratives(h.id);
+    ns.forEach(n => { narrExp[n] = (narrExp[n] || 0) + h.weight; });
+  });
+  const sortedNarratives = Object.entries(narrExp).sort((a, b) => b[1] - a[1]);
+
+  // Render sector exposure
+  document.getElementById('sector-exposure').innerHTML = sortedSectors.slice(0, 8).map(([s, w]) => `
+    <div class="exposure-row">
+      <span class="exposure-label">${s}</span>
+      <div class="exposure-bar"><div class="exposure-fill" style="width: ${Math.min(100, w * 100)}%; background: ${w > 0.4 ? 'var(--red)' : w > 0.25 ? 'var(--amber)' : 'var(--emerald)'}"></div></div>
+      <span class="exposure-val">${(w * 100).toFixed(1)}%</span>
+    </div>
+  `).join('');
+
+  // Render narrative
+  if (sortedNarratives.length) {
+    document.getElementById('narrative-exposure').innerHTML = sortedNarratives.map(([n, w]) => `
+      <div class="exposure-row">
+        <span class="exposure-label">${n}</span>
+        <div class="exposure-bar"><div class="exposure-fill" style="width: ${Math.min(100, w * 100)}%; background: ${w > 0.3 ? 'var(--amber)' : 'var(--cyan)'}"></div></div>
+        <span class="exposure-val">${(w * 100).toFixed(1)}%</span>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('narrative-exposure').innerHTML = '<div style="font-size: 10px; color: var(--text-mute); padding: 8px;">No mapped narratives in current holdings.</div>';
+  }
+
+  // ===== SCORING =====
+  // Diversification (HHI inverted): 100 if perfectly diversified, 0 if 1 holding
+  const hhi = holdings.reduce((s, h) => s + h.weight * h.weight, 0);
+  const diversification = (1 - hhi) * 100;
+
+  // Concentration risk: top holding %
+  const topWeight = holdings[0]?.weight || 0;
+  const top3Weight = holdings.slice(0, 3).reduce((s, h) => s + h.weight, 0);
+  const concentrationPenalty = topWeight > 0.5 ? 30 : topWeight > 0.35 ? 15 : 0;
+
+  // Sector concentration
+  const topSector = sortedSectors[0]?.[1] || 0;
+  const sectorPenalty = topSector > 0.6 ? 25 : topSector > 0.45 ? 12 : 0;
+
+  // Holding count
+  const nHoldings = holdings.length;
+  const sizePenalty = nHoldings < 3 ? 20 : nHoldings < 5 ? 10 : 0;
+
+  // BTC exposure (defensive)
+  const btcExp = holdings.find(h => h.id === 'bitcoin')?.weight || 0;
+  const btcMissingPenalty = btcExp < 0.10 ? 15 : btcExp < 0.20 ? 8 : 0;
+
+  // Stable exposure
+  const stableExp = sectorExp['Stable'] || 0;
+  // Stables only mildly weighted - too many = lazy, none = ok for aggressive
+
+  // Volatility proxy from holdings' 24h
+  const weightedVol = holdings.reduce((s, h) => s + h.weight * Math.abs(h.priceChange24h || 0), 0);
+  const volPenalty = weightedVol > 8 ? 15 : weightedVol > 5 ? 8 : 0;
+
+  let score = diversification - concentrationPenalty - sectorPenalty - sizePenalty - btcMissingPenalty - volPenalty;
+  score = Math.max(0, Math.min(100, score));
+
+  // Grade
+  let grade, gradeColor;
+  if (score >= 80) { grade = 'EXCELLENT'; gradeColor = 'emerald'; }
+  else if (score >= 65) { grade = 'GOOD'; gradeColor = 'emerald'; }
+  else if (score >= 45) { grade = 'MODERATE'; gradeColor = 'amber'; }
+  else if (score >= 25) { grade = 'CONCENTRATED'; gradeColor = 'amber'; }
+  else { grade = 'HIGH RISK'; gradeColor = 'red'; }
+
+  const scoreEl = document.getElementById('risk-score');
+  scoreEl.textContent = Math.round(score);
+  scoreEl.style.color = `var(--${gradeColor})`;
+  const gradeEl = document.getElementById('risk-score-grade');
+  gradeEl.textContent = grade;
+  gradeEl.style.color = `var(--${gradeColor})`;
+
+  // Risk bars
+  document.getElementById('risk-bars').innerHTML = [
+    { l: 'Diversification', v: diversification, max: 100, fmt: v => v.toFixed(0), good: 'high' },
+    { l: 'Top Holding %', v: topWeight * 100, max: 100, fmt: v => v.toFixed(1) + '%', good: 'low' },
+    { l: 'Top 3 Concentration', v: top3Weight * 100, max: 100, fmt: v => v.toFixed(1) + '%', good: 'low' },
+    { l: 'Holding Count', v: nHoldings, max: 15, fmt: v => v.toString(), good: 'high' },
+    { l: 'BTC Defensive %', v: btcExp * 100, max: 50, fmt: v => v.toFixed(1) + '%', good: 'high' },
+    { l: 'Volatility (24h wt.)', v: weightedVol, max: 15, fmt: v => v.toFixed(2) + '%', good: 'low' },
+  ].map(b => {
+    const pct = Math.min(100, (b.v / b.max) * 100);
+    let color;
+    if (b.good === 'high') color = pct > 60 ? 'var(--emerald)' : pct > 30 ? 'var(--amber)' : 'var(--red)';
+    else color = pct < 30 ? 'var(--emerald)' : pct < 60 ? 'var(--amber)' : 'var(--red)';
+    return `
+      <div class="risk-bar">
+        <div class="risk-bar-head">
+          <span class="risk-bar-label">${b.l}</span>
+          <span class="risk-bar-val" style="color: ${color}">${b.fmt(b.v)}</span>
+        </div>
+        <div class="risk-bar-track"><div class="risk-bar-fill" style="width: ${pct}%; background: ${color}"></div></div>
+      </div>
+    `;
+  }).join('');
+
+  // ===== RECOMMENDATIONS =====
+  const recos = [];
+
+  // Concentration
+  if (topWeight > 0.5) {
+    recos.push({
+      type: 'warning',
+      title: 'Extreme concentration risk',
+      body: `Your top position (${holdings[0].symbol}) is ${(topWeight * 100).toFixed(1)}% of portfolio — a single drawdown could wipe 30-50% of capital. Institutional risk frameworks cap single-name exposure at 25-30%.`,
+      action: `Trim ${holdings[0].symbol} to ~30% · redeploy into uncorrelated assets`,
+    });
+  } else if (topWeight > 0.35) {
+    recos.push({
+      type: 'suggest',
+      title: 'Elevated single-name concentration',
+      body: `${holdings[0].symbol} at ${(topWeight * 100).toFixed(1)}% is above the 25-30% prudent ceiling. Beta to one asset dominates portfolio returns.`,
+      action: `Consider trim to ~30% · reallocate to diversifying positions`,
+    });
+  }
+
+  // BTC defensive
+  if (btcExp < 0.10 && nHoldings >= 3) {
+    recos.push({
+      type: 'warning',
+      title: 'Insufficient BTC defensive allocation',
+      body: `BTC is ${(btcExp * 100).toFixed(1)}% of portfolio. As the highest-liquidity, lowest-beta major, BTC typically serves as the defensive anchor (15-30% in balanced crypto portfolios).`,
+      action: 'Add 10-20% BTC for defensive ballast',
+    });
+  }
+
+  // Sector concentration
+  if (topSector > 0.6) {
+    recos.push({
+      type: 'warning',
+      title: `${sortedSectors[0][0]} sector overweight`,
+      body: `${(topSector * 100).toFixed(0)}% of portfolio sits in ${sortedSectors[0][0]}. Sector-specific drawdowns (regulatory, technical, narrative) will move the entire book in lockstep.`,
+      action: 'Diversify across at least 3 sectors',
+    });
+  } else if (topSector > 0.45) {
+    recos.push({
+      type: 'suggest',
+      title: `${sortedSectors[0][0]} concentration elevated`,
+      body: `${(topSector * 100).toFixed(0)}% sector weighting is above optimal diversification thresholds for risk-managed portfolios.`,
+      action: 'Add exposure to underweighted sectors',
+    });
+  }
+
+  // Narrative concentration
+  sortedNarratives.forEach(([n, w]) => {
+    if (w > 0.35) {
+      recos.push({
+        type: 'suggest',
+        title: `Heavy ${n} narrative exposure`,
+        body: `${(w * 100).toFixed(0)}% of portfolio is exposed to the ${n} narrative. Narrative-driven assets correlate sharply on flow rotation — when the narrative cools, all positions sell off together.`,
+        action: `Cap ${n} exposure at ~25%`,
+      });
+    }
+  });
+
+  // Size
+  if (nHoldings < 3) {
+    recos.push({
+      type: 'warning',
+      title: 'Too few holdings',
+      body: `${nHoldings} position${nHoldings === 1 ? '' : 's'} provides essentially no diversification benefit. Institutional minimums are typically 5-10 names for adequate idiosyncratic risk spread.`,
+      action: 'Add 3-5 more positions across sectors',
+    });
+  } else if (nHoldings < 5) {
+    recos.push({
+      type: 'suggest',
+      title: 'Limited diversification breadth',
+      body: `${nHoldings} positions is the low end. 5-12 names is typical for actively managed crypto portfolios with meaningful diversification.`,
+      action: 'Consider 2-3 additional uncorrelated positions',
+    });
+  } else if (nHoldings > 15) {
+    recos.push({
+      type: 'suggest',
+      title: 'Over-diversification dilution',
+      body: `${nHoldings} positions may dilute conviction returns. Most active managers hold 8-15 names — beyond this, marginal diversification benefit drops while monitoring complexity rises.`,
+      action: 'Consider consolidating into highest-conviction names',
+    });
+  }
+
+  // Missing sectors (for portfolios > 3 holdings)
+  if (nHoldings >= 3) {
+    const sectorsHeld = new Set(Object.keys(sectorExp));
+    const idealCoreMissing = ['BTC', 'L1', 'DEX', 'Oracle', 'Lending'].filter(s => !sectorsHeld.has(s));
+    if (idealCoreMissing.length >= 2) {
+      const suggestion = {
+        'BTC': 'Bitcoin (defensive)',
+        'L1': 'ETH/SOL (smart contract infra)',
+        'DEX': 'Uniswap (DeFi exposure)',
+        'Oracle': 'Chainlink (infrastructure)',
+        'Lending': 'Aave (DeFi yield)',
+      };
+      recos.push({
+        type: 'suggest',
+        title: 'Missing core sectors',
+        body: `Portfolio lacks exposure to: ${idealCoreMissing.join(', ')}. A balanced crypto book typically includes representation across BTC, L1, DEX, and infrastructure.`,
+        action: 'Consider: ' + idealCoreMissing.slice(0, 2).map(s => suggestion[s]).join(' · '),
+      });
+    }
+  }
+
+  // Volatility
+  if (weightedVol > 8) {
+    recos.push({
+      type: 'warning',
+      title: 'High portfolio volatility',
+      body: `Weighted 24h move is ${weightedVol.toFixed(2)}%, indicating high-beta composition. Tail risk is amplified — drawdowns of 50%+ are realistic in crypto bear phases for portfolios with this profile.`,
+      action: 'Add lower-volatility anchors (BTC, ETH, stables)',
+    });
+  }
+
+  // Stable exposure for risk-averse
+  const riskAppetite = parseInt(document.getElementById('risk-appetite').value);
+  if (riskAppetite <= 2 && stableExp < 0.15) {
+    recos.push({
+      type: 'suggest',
+      title: 'Low stablecoin allocation for risk profile',
+      body: `You've indicated conservative risk appetite, but stables are only ${(stableExp * 100).toFixed(1)}% of portfolio. Stables provide dry powder for drawdown buys and reduce overall volatility.`,
+      action: 'Consider 15-25% stablecoin allocation',
+    });
+  }
+
+  // PnL positions
+  const winners = holdings.filter(h => h.currentPrice > h.avgCost && h.avgCost > 0);
+  const losers = holdings.filter(h => h.currentPrice < h.avgCost * 0.7 && h.avgCost > 0);
+  if (losers.length > 0) {
+    recos.push({
+      type: 'suggest',
+      title: 'Positions down >30% from cost basis',
+      body: losers.map(h => `${h.symbol}: ${((h.currentPrice / h.avgCost - 1) * 100).toFixed(1)}% from cost`).join(' · ') + '. Review thesis — if broken, cut. If intact, consider DCA.',
+      action: 'Review thesis for each position individually',
+    });
+  }
+
+  if (recos.length === 0) {
+    recos.push({
+      type: 'good',
+      title: 'Portfolio looks well-structured',
+      body: `No critical concentration, sector, or volatility flags. Score ${Math.round(score)}/100 (${grade}). Continue periodic rebalancing.`,
+      action: 'Maintain · review quarterly',
+    });
+  }
+
+  document.getElementById('reco-list').innerHTML = recos.map(r => `
+    <div class="reco-card ${r.type}">
+      <div class="reco-head">
+        <div class="reco-title">${r.title}</div>
+        <span class="tag ${r.type === 'warning' ? 'red' : r.type === 'good' ? 'emerald' : 'amber'}">${r.type === 'warning' ? 'PRIORITY' : r.type === 'good' ? 'HEALTHY' : 'SUGGEST'}</span>
+      </div>
+      <div class="reco-body">${r.body}</div>
+      <div class="reco-action">→ ${r.action}</div>
+    </div>
+  `).join('');
+
+  // Target allocation by risk profile
+  const horizon = parseInt(document.getElementById('horizon').value);
+  let target;
+  if (riskAppetite <= 2) {
+    target = { 'BTC': 40, 'ETH': 25, 'Stable': 20, 'Top L1s': 10, 'DeFi blue chips': 5 };
+  } else if (riskAppetite === 3) {
+    target = { 'BTC': 25, 'ETH': 25, 'Top L1s (SOL/AVAX)': 15, 'DeFi blue chips': 15, 'Stables': 10, 'Narrative/theme': 10 };
+  } else if (riskAppetite === 4) {
+    target = { 'BTC': 15, 'ETH': 20, 'Top L1s': 20, 'DeFi/Infra': 20, 'Narrative/theme': 20, 'Stables': 5 };
+  } else {
+    target = { 'BTC': 10, 'ETH': 15, 'Top L1s': 15, 'High-conviction narrative': 35, 'Mid-cap rotation': 20, 'Stables': 5 };
+  }
+  if (horizon === 1) {
+    target['Stables'] = (target['Stables'] || 0) + 15;
+    if (target['Narrative/theme']) target['Narrative/theme'] -= 5;
+    if (target['High-conviction narrative']) target['High-conviction narrative'] -= 10;
+  }
+  document.getElementById('target-allocation').innerHTML = Object.entries(target).map(([k, v]) =>
+    `<div style="display: flex; justify-content: space-between"><span>${k}</span><span style="color: var(--amber)">${v}%</span></div>`
+  ).join('');
+}
+
+// Risk profile sliders
+document.getElementById('risk-appetite').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value);
+  const labels = ['Very Conservative', 'Conservative', 'Moderate', 'Aggressive', 'Very Aggressive'];
+  document.getElementById('risk-appetite-val').textContent = labels[v - 1];
+  renderRecommendations();
+});
+document.getElementById('horizon').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value);
+  const labels = ['Short-term', 'Mid-term', 'Long-term'];
+  document.getElementById('horizon-val').textContent = labels[v - 1];
+  renderRecommendations();
+});
+
+// ============ DEFI MODULE ============
+function renderDefiKPIs() {
+  if (!state.defiProtocols.length) return;
+  setKPI('kpi-protcount', state.defiProtocols.length.toLocaleString(), null);
+  if (state.chains.length) setKPI('kpi-topchain', state.chains[0][0], null);
+  if (state.categories?.length) setKPI('kpi-topcat', state.categories[0][0], null);
+}
+
+function updateTVLKPI() {
+  if (!state.tvlHistory || !state.tvlHistory.length) return;
+  const latest = state.tvlHistory[state.tvlHistory.length - 1].tvl;
+  const seven = state.tvlHistory[state.tvlHistory.length - 8]?.tvl || latest;
+  const chg = ((latest - seven) / seven) * 100;
+  setKPI('kpi-tvl', fmt.bn(latest), chg);
+  setKPI('kpi-globaltvl', fmt.bn(latest), chg);
+}
+
+function renderDefiTable() {
+  const html = state.defiProtocols.slice(0, 30).map((p, i) => {
+    const d1 = p.change_1d || 0;
+    const d7 = p.change_7d || 0;
+    return `
+      <div class="tbl-row${i % 2 === 1 ? ' alt' : ''}" style="grid-template-columns: 40px 1fr 100px 70px 70px 100px">
+        <span style="color: var(--text-mute)">${String(i + 1).padStart(2, '0')}</span>
+        <span style="color: var(--text)">${p.name}</span>
+        <span class="text-right" style="color: var(--emerald)">${fmt.bn(p.tvl)}</span>
+        <span class="text-right" style="color: ${d1 >= 0 ? 'var(--emerald)' : 'var(--red)'}">${fmt.pct(d1)}</span>
+        <span class="text-right" style="color: ${d7 >= 0 ? 'var(--emerald)' : 'var(--red)'}">${fmt.pct(d7)}</span>
+        <span style="color: var(--cyan); font-size: 9px">${p.category || '—'}</span>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('defi-table').innerHTML = html;
+}
+
+function renderTVL() {
+  if (!state.tvlHistory) return;
+  if (charts.tvl) charts.tvl.destroy();
+  const ctx = document.getElementById('tvl-chart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 260);
+  grad.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+  grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+  const data = state.tvlHistory;
+  const step = Math.max(1, Math.floor(data.length / 200));
+  const sampled = data.filter((_, i) => i % step === 0);
+  charts.tvl = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sampled.map(p => new Date(p.date * 1000).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })),
+      datasets: [{
+        data: sampled.map(p => p.tvl),
+        borderColor: COLORS.emerald, backgroundColor: grad,
+        borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.25,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { ...tooltipConfig, callbacks: { label: ctx => 'TVL: ' + fmt.bn(ctx.parsed.y) } } },
+      scales: {
+        x: { ...axisConfig, ticks: { ...axisConfig.ticks, maxTicksLimit: 10 } },
+        y: { ...axisConfig, ticks: { ...axisConfig.ticks, callback: v => '$' + (v / 1e9).toFixed(0) + 'B' } },
+      },
+    },
+  });
+}
+
+function renderChainChart() {
+  if (!state.chains.length) return;
+  if (charts.chain) charts.chain.destroy();
+  const ctx = document.getElementById('chain-chart').getContext('2d');
+  const palette = [COLORS.amber, COLORS.emerald, COLORS.cyan, COLORS.violet, COLORS.red,
+                   '#84cc16', '#ec4899', '#0ea5e9', '#a855f7', '#f97316'];
+  charts.chain = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: state.chains.map(c => c[0]),
+      datasets: [{
+        data: state.chains.map(c => c[1]),
+        backgroundColor: state.chains.map((_, i) => palette[i] + 'cc'),
+        borderColor: state.chains.map((_, i) => palette[i]),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { ...tooltipConfig, callbacks: { label: ctx => fmt.bn(ctx.parsed.x) } } },
+      scales: {
+        x: { ...axisConfig, ticks: { ...axisConfig.ticks, callback: v => '$' + (v / 1e9).toFixed(0) + 'B' } },
+        y: { ...axisConfig, ticks: { ...axisConfig.ticks, font: { size: 10, family: 'JetBrains Mono' } } },
+      },
+    },
+  });
+}
+
+// ============ VALUATION ============
+const VAL_MAP = {
+  ethereum: { slug: 'ethereum', cgId: 'ethereum' },
+  solana: { slug: 'solana', cgId: 'solana' },
+  uniswap: { slug: 'uniswap', cgId: 'uniswap' },
+  aave: { slug: 'aave', cgId: 'aave' },
+  makerdao: { slug: 'makerdao', cgId: 'maker' },
+  lido: { slug: 'lido', cgId: 'lido-dao' },
+  gmx: { slug: 'gmx', cgId: 'gmx' },
+  'curve-dex': { slug: 'curve-dex', cgId: 'curve-dao-token' },
+};
+let valBaseCashFlow = 1e9;
+let valBaseMcap = 100e9;
+
+async function loadVal() {
+  const id = document.getElementById('val-protocol').value;
+  const m = VAL_MAP[id];
+  if (!m) return;
+  try {
+    let fees = null;
+    try {
+      const feesData = await fetchJSON(`${DL}/summary/fees/${m.slug}?dataType=dailyFees`);
+      if (feesData?.total365d) fees = feesData.total365d;
+      else if (feesData?.totalAllTime) fees = feesData.totalAllTime * 0.4;
+    } catch (e) { /* fall through */ }
+
+    const proto = state.protocols.find(p => p.id === m.cgId);
+    if (!fees && proto) fees = proto.total_volume * 365 * 0.003;
+    valBaseCashFlow = fees || 1e9;
+    if (proto) valBaseMcap = proto.market_cap;
+
+    document.getElementById('val-base-cf').textContent = fmt.bn(valBaseCashFlow) + '/yr · vs mcap ' + fmt.bn(valBaseMcap);
+    recomputeDCF();
+    renderMC();
+    renderScenarios();
+  } catch (e) { console.error(e); }
+}
+
+function recomputeDCF() {
+  const disc = parseInt(document.getElementById('disc-slider').value);
+  const growth = parseInt(document.getElementById('growth-slider').value);
+  const exit = parseInt(document.getElementById('exit-slider').value);
+  document.getElementById('disc-val').textContent = disc + '%';
+  document.getElementById('growth-val').textContent = growth + '%';
+  document.getElementById('exit-val').textContent = exit + '×';
+
+  const cf = valBaseCashFlow;
+  let pv = 0;
+  const flows = [];
+  for (let y = 1; y <= 5; y++) {
+    const v = (cf * Math.pow(1 + growth / 100, y)) / Math.pow(1 + disc / 100, y);
+    pv += v;
+    flows.push({ label: `Y${y} PV`, value: v });
+  }
+  const terminalCF = cf * Math.pow(1 + growth / 100, 5);
+  const terminalValue = terminalCF * exit;
+  const tvPV = terminalValue / Math.pow(1 + disc / 100, 5);
+  pv += tvPV;
+  flows.push({ label: 'Terminal PV', value: tvPV });
+
+  document.getElementById('fv-value').textContent = fmt.bn(pv);
+  const premium = ((pv / valBaseMcap) - 1) * 100;
+  document.getElementById('fv-sub').innerHTML = `vs ${fmt.bn(valBaseMcap)} mcap · <span style="color: ${premium >= 0 ? 'var(--emerald)' : 'var(--red)'}">${fmt.pct(premium)} ${premium >= 0 ? 'upside' : 'downside'}</span>`;
+
+  document.getElementById('dcf-table').innerHTML = flows.map(f => {
+    const pct = (f.value / pv) * 100;
+    return `
+      <div class="dcf-row">
+        <span class="label">${f.label}</span>
+        <div class="bar"><div class="fill" style="width: ${Math.abs(pct)}%; background: ${f.label === 'Terminal PV' ? 'var(--violet)' : 'var(--amber)'}"></div></div>
+        <span class="val">${fmt.bn(f.value)}</span>
+        <span class="pct">${pct.toFixed(0)}%</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderScenarios() {
+  const cf = valBaseCashFlow;
+  const scenarios = [
+    { name: 'Bear', rev: cf * 0.6, mult: 8, prob: 25, color: 'red' },
+    { name: 'Base', rev: cf, mult: 15, prob: 50, color: 'amber' },
+    { name: 'Bull', rev: cf * 1.8, mult: 25, prob: 25, color: 'emerald' },
+  ];
+  const html = scenarios.map(s => `
+    <div style="background: var(--bg-elev); border: 1px solid ${s.name === 'Base' ? 'rgba(245,158,11,0.6)' : 'var(--border)'}; padding: 12px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-family: 'Fraunces', serif; font-size: 14px; color: var(--${s.color})">${s.name} Case</span>
+        <span class="tag ${s.name === 'Base' ? 'amber' : 'mute'}">${s.prob}%</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px;">
+        <div><div style="color: var(--text-mute); font-size: 9px;">FEES</div><div style="color: var(--text)">${fmt.bn(s.rev)}</div></div>
+        <div><div style="color: var(--text-mute); font-size: 9px;">MULT</div><div style="color: var(--text)">${s.mult}×</div></div>
+        <div><div style="color: var(--text-mute); font-size: 9px;">EV</div><div style="color: var(--amber)">${fmt.bn(s.rev * s.mult)}</div></div>
+      </div>
+    </div>
+  `).join('');
+  const weighted = scenarios.reduce((s, x) => s + x.rev * x.mult * x.prob / 100, 0);
+  document.getElementById('scenario-tree').innerHTML = html + `
+    <div style="padding: 10px; border-top: 1px solid var(--border); margin-top: 6px; display: flex; justify-content: space-between;">
+      <span style="font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace">PROB-WEIGHTED EV</span>
+      <span style="font-size: 14px; color: var(--amber); font-family: 'JetBrains Mono', monospace">${fmt.bn(weighted)}</span>
+    </div>
+  `;
+}
+
+function renderMC() {
+  if (charts.mc) charts.mc.destroy();
+  const sims = 5000, months = 12, mu = 0.04, sigma = 0.20, start = 100;
+  const percentiles = [5, 25, 50, 75, 95];
+  const paths = [];
+  for (let s = 0; s < sims; s++) {
+    let p = start;
+    const path = [p];
+    for (let t = 1; t <= months; t++) {
+      const z = Math.sqrt(-2 * Math.log(Math.random())) * Math.cos(2 * Math.PI * Math.random());
+      p = p * Math.exp((mu - 0.5 * sigma * sigma) + sigma * z);
+      path.push(p);
+    }
+    paths.push(path);
+  }
+  const series = percentiles.map(pc =>
+    Array.from({ length: months + 1 }, (_, t) => {
+      const sorted = paths.map(p => p[t]).sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length * pc / 100)];
+    })
+  );
+  const ctx = document.getElementById('mc-chart').getContext('2d');
+  charts.mc = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({ length: months + 1 }, (_, i) => 'M' + i),
+      datasets: [
+        { label: 'P95', data: series[4], borderColor: COLORS.emerald, borderWidth: 0.5, backgroundColor: 'rgba(16,185,129,0.08)', fill: '+1', pointRadius: 0, tension: 0.3 },
+        { label: 'P75', data: series[3], borderColor: COLORS.emerald, borderWidth: 0.5, backgroundColor: 'rgba(16,185,129,0.12)', fill: '+1', pointRadius: 0, tension: 0.3 },
+        { label: 'P50', data: series[2], borderColor: COLORS.amber, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+        { label: 'P25', data: series[1], borderColor: COLORS.amber, borderWidth: 0.5, backgroundColor: 'rgba(245,158,11,0.08)', fill: '+1', pointRadius: 0, tension: 0.3 },
+        { label: 'P5', data: series[0], borderColor: COLORS.red, borderWidth: 0.5, pointRadius: 0, tension: 0.3 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { ...tooltipConfig, callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(1)}` } } },
+      scales: { x: axisConfig, y: { ...axisConfig, ticks: { ...axisConfig.ticks, callback: v => v.toFixed(0) } } },
+    },
+  });
+  document.getElementById('mc-legend').innerHTML = percentiles.map((pc, i) => `
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <div style="width: 10px; height: 2px; background: ${i === 0 ? COLORS.red : i < 3 ? COLORS.amber : COLORS.emerald}"></div>
+      <span style="color: var(--text-dim)">P${pc}</span>
+      <span style="color: var(--text)">${series[i][months].toFixed(0)}</span>
+    </div>
+  `).join('');
+}
+
+// ============ TOKENOMICS ============
+async function loadTokenomics() {
+  const id = document.getElementById('tokenomics-asset').value;
+  try {
+    const data = await fetchJSON(`${CG}/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`);
+    const md = data.market_data;
+    const circ = md.circulating_supply;
+    const max = md.max_supply || md.total_supply;
+    const fdv = md.fully_diluted_valuation?.usd;
+    const mcap = md.market_cap.usd;
+    const ath = md.ath.usd;
+    const athChg = md.ath_change_percentage.usd;
+    setKPI('kpi-circ', fmt.num(circ), null);
+    document.getElementById('kpi-circ-asset').textContent = data.symbol.toUpperCase();
+    setKPI('kpi-fdv', fdv ? (fdv / mcap).toFixed(2) + '×' : '—', null);
+    setKPI('kpi-ath', fmt.pct(athChg), null);
+    setKPI('kpi-supply', max ? fmt.num(max) : 'Uncapped', null);
+    renderSupplyChart(circ);
+  } catch (e) { console.error('Tokenomics load failed', e); }
+}
+
+function renderSupplyChart(circ) {
+  if (charts.supply) charts.supply.destroy();
+  const emission = parseInt(document.getElementById('emission-slider').value) / 10;
+  const burn = parseInt(document.getElementById('burn-slider').value) / 10;
+  const months = 60;
+  const data = Array.from({ length: months }, (_, i) => {
+    const yearFrac = i / 12;
+    return {
+      m: i,
+      circulating: circ * (1 + (emission / 100) * yearFrac),
+      burned: circ * (burn / 100) * yearFrac,
+      net: circ * (1 + ((emission - burn) / 100) * yearFrac),
+    };
+  });
+  const ctx = document.getElementById('supply-chart').getContext('2d');
+  const g1 = ctx.createLinearGradient(0, 0, 0, 280);
+  g1.addColorStop(0, 'rgba(245,158,11,0.5)'); g1.addColorStop(1, 'rgba(245,158,11,0)');
+  charts.supply = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(d => 'M' + d.m),
+      datasets: [
+        { label: 'Circulating (gross)', data: data.map(d => d.circulating), borderColor: COLORS.amber, backgroundColor: g1, borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.3 },
+        { label: 'Cumulative Burn', data: data.map(d => d.burned), borderColor: COLORS.emerald, borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+        { label: 'Net Supply', data: data.map(d => d.net), borderColor: COLORS.violet, borderWidth: 1.5, borderDash: [3, 3], pointRadius: 0, tension: 0.3 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: COLORS.textDim, font: { size: 10, family: 'JetBrains Mono' }, padding: 12, boxWidth: 12 } }, tooltip: tooltipConfig },
+      scales: { x: { ...axisConfig, ticks: { ...axisConfig.ticks, maxTicksLimit: 12 } }, y: axisConfig },
+    },
+  });
+}
+
+function updateTokenomicsOutput() {
+  const emission = parseInt(document.getElementById('emission-slider').value) / 10;
+  const burn = parseInt(document.getElementById('burn-slider').value) / 10;
+  const staking = parseInt(document.getElementById('staking-slider').value);
+  document.getElementById('emission-val').textContent = emission.toFixed(2) + '%';
+  document.getElementById('burn-val').textContent = burn.toFixed(2) + '%';
+  document.getElementById('staking-val').textContent = staking + '%';
+  const net = emission - burn;
+  const yieldVal = 4.8 + (40 - staking) * 0.08;
+  const dilution = net * (1 - staking / 100);
+  document.getElementById('out-inflation').textContent = net.toFixed(2) + '%';
+  document.getElementById('out-inflation').style.color = net > 0 ? 'var(--red)' : 'var(--emerald)';
+  document.getElementById('out-yield').textContent = yieldVal.toFixed(2) + '%';
+  document.getElementById('out-dilution').textContent = dilution.toFixed(2) + '%';
+  if (document.getElementById('module-tokenomics').classList.contains('active')) loadTokenomics();
+}
+
+// ============ COPILOT ============
+function answerQuery(q) {
+  const ql = q.toLowerCase();
+  const g = state.global;
+  const protos = state.protocols;
+  const port = state.portfolio;
+  const defi = state.defiProtocols;
+
+  // Portfolio-specific queries
+  if (ql.includes('my portfolio') || ql.includes('analyze') || ql.includes('rebalance') || ql.includes('my risk')) {
+    if (!port.length) {
+      return { signal: 'NO PORTFOLIO', signalColor: 'amber', confidence: 100,
+        bullets: ['You have no holdings yet.', 'Add holdings in the Portfolio module to enable portfolio analysis.'],
+        risks: [] };
+    }
+    let totalValue = 0;
+    port.forEach(h => totalValue += (h.qty || 0) * (h.currentPrice || 0));
+    if (totalValue === 0) {
+      return { signal: 'INCOMPLETE', signalColor: 'amber', confidence: 100,
+        bullets: ['Holdings exist but quantities are zero.', 'Set qty and avg cost on the Portfolio module.'],
+        risks: [] };
+    }
+    const holdings = port.map(h => ({ ...h, weight: ((h.qty || 0) * (h.currentPrice || 0)) / totalValue })).sort((a, b) => b.weight - a.weight);
+    const sectorExp = {};
+    holdings.forEach(h => { const s = getSector(h.id); sectorExp[s] = (sectorExp[s] || 0) + h.weight; });
+    const topSector = Object.entries(sectorExp).sort((a, b) => b[1] - a[1])[0];
+    const hhi = holdings.reduce((s, h) => s + h.weight * h.weight, 0);
+    const diversification = (1 - hhi) * 100;
+    const weightedVol = holdings.reduce((s, h) => s + h.weight * Math.abs(h.priceChange24h || 0), 0);
+
+    return {
+      signal: diversification > 70 ? 'WELL-DIVERSIFIED' : diversification > 50 ? 'MODERATE' : 'CONCENTRATED',
+      signalColor: diversification > 70 ? 'emerald' : diversification > 50 ? 'amber' : 'red',
+      confidence: 85,
+      bullets: [
+        `Portfolio value: ${fmt.bn(totalValue)} across ${holdings.length} holdings`,
+        `Diversification score: ${diversification.toFixed(0)}/100 (HHI: ${hhi.toFixed(3)})`,
+        `Top position: ${holdings[0].symbol} at ${(holdings[0].weight * 100).toFixed(1)}%`,
+        `Top sector: ${topSector[0]} at ${(topSector[1] * 100).toFixed(0)}%`,
+        `Weighted 24h volatility: ${weightedVol.toFixed(2)}%`,
+        `${holdings.filter(h => (h.priceChange24h || 0) > 0).length}/${holdings.length} positions positive 24h`,
+      ],
+      risks: [
+        holdings[0].weight > 0.4 ? `Single-name concentration risk: ${holdings[0].symbol} dominates` : null,
+        topSector[1] > 0.5 ? `Sector concentration: ${topSector[0]}` : null,
+        weightedVol > 6 ? 'Elevated volatility regime' : null,
+        holdings.length < 5 ? 'Limited diversification breadth' : null,
+      ].filter(Boolean),
+    };
+  }
+
+  if (ql.includes('market state') || ql.includes('market')) {
+    const chg = g?.market_cap_change_percentage_24h_usd || 0;
+    let signal = 'NEUTRAL', signalColor = 'amber';
+    if (chg > 2) { signal = 'BULLISH'; signalColor = 'emerald'; }
+    else if (chg < -2) { signal = 'BEARISH'; signalColor = 'red'; }
+    return {
+      signal, signalColor, confidence: 75,
+      bullets: [
+        `Total crypto mcap: ${fmt.bn(g?.total_market_cap?.usd || 0)} (${fmt.pct(chg)} 24h)`,
+        `24h volume: ${fmt.bn(g?.total_volume?.usd || 0)} · vol/mcap ratio ${((g?.total_volume?.usd / g?.total_market_cap?.usd) * 100).toFixed(2)}%`,
+        `BTC dominance: ${g?.market_cap_percentage?.btc?.toFixed(1)}% — ${g?.market_cap_percentage?.btc > 55 ? 'majors-led regime' : 'alt-friendly regime'}`,
+        `${protos.filter(p => (p.price_change_percentage_24h || 0) > 0).length} of top 100 positive over 24h`,
+        `Top gainer: ${[...protos].sort((a,b)=>(b.price_change_percentage_24h||0)-(a.price_change_percentage_24h||0))[0]?.symbol?.toUpperCase()} · top loser: ${[...protos].sort((a,b)=>(a.price_change_percentage_24h||0)-(b.price_change_percentage_24h||0))[0]?.symbol?.toUpperCase()}`,
+      ],
+      risks: ['Free-tier data lags ~1-5 min', chg < -3 ? 'Significant 24h drawdown — watch for cascade' : 'Standard volatility regime'],
+    };
+  }
+
+  if (ql.includes('defi') || ql.includes('opportun')) {
+    const top = defi.slice(0, 5);
+    const totalTVL = defi.reduce((s, p) => s + (p.tvl || 0), 0);
+    return {
+      signal: 'DEFI SCREEN', signalColor: 'amber', confidence: 70,
+      bullets: [
+        `${defi.length.toLocaleString()} protocols tracked, aggregate TVL ${fmt.bn(totalTVL)}`,
+        ...top.map(p => `${p.name}: TVL ${fmt.bn(p.tvl)} · ${fmt.pct(p.change_7d || 0)} 7d · ${p.category}`),
+        `Top category: ${state.categories[0][0]} at ${fmt.bn(state.categories[0][1])}`,
+      ],
+      risks: ['Smart contract risk universal to DeFi', 'Stablecoin depeg as tail risk', 'Regulatory action on yield products'],
+    };
+  }
+
+  if (ql.includes('risk-adjusted') || ql.includes('best return')) {
+    const scored = [...protos].filter(p => p.market_cap > 5e8).map(p => {
+      const r7 = p.price_change_percentage_7d_in_currency || 0;
+      const r30 = p.price_change_percentage_30d_in_currency || 0;
+      const vol = Math.abs(p.price_change_percentage_24h || 0) + Math.abs(r7 / 7);
+      return { ...p, riskAdj: vol > 0 ? r30 / vol : r30 };
+    }).sort((a, b) => b.riskAdj - a.riskAdj);
+    return {
+      signal: 'RISK-ADJUSTED SCREEN', signalColor: 'amber', confidence: 60,
+      bullets: scored.slice(0, 6).map(p => `${p.symbol.toUpperCase()}: 30d ${fmt.pct(p.price_change_percentage_30d_in_currency)} · 24h vol proxy ${Math.abs(p.price_change_percentage_24h || 0).toFixed(2)}% · mcap ${fmt.bn(p.market_cap)}`),
+      risks: ['Past returns don\'t predict future', 'Survivor bias in screen', 'Vol estimate is daily, not realized'],
+    };
+  }
+
+  if (ql.includes('overvalued') || ql.includes('expensive')) {
+    const sorted = [...protos].filter(p => p.market_cap > 1e9).sort((a, b) => (b.price_change_percentage_30d_in_currency || 0) - (a.price_change_percentage_30d_in_currency || 0));
+    return {
+      signal: 'OVERHEATING CHECK', signalColor: 'amber', confidence: 55,
+      bullets: ['Top 30-day runners — potential mean reversion candidates:', ...sorted.slice(0, 5).map(p => `${p.symbol.toUpperCase()}: +${(p.price_change_percentage_30d_in_currency || 0).toFixed(0)}% 30d · mcap ${fmt.bn(p.market_cap)}`)],
+      risks: ['30d momentum ≠ valuation', 'Strong trends can extend', 'Cut losers, let winners run'],
+    };
+  }
+
+  if (ql.includes('undervalued') || ql.includes('cheap')) {
+    const sorted = [...protos].filter(p => p.market_cap > 1e9).sort((a, b) => (a.price_change_percentage_30d_in_currency || 0) - (b.price_change_percentage_30d_in_currency || 0));
+    return {
+      signal: 'CONTRARIAN SCREEN', signalColor: 'amber', confidence: 55,
+      bullets: ['Worst 30d performers among $1B+ caps — potential mean reversion:', ...sorted.slice(0, 5).map(p => `${p.symbol.toUpperCase()}: ${(p.price_change_percentage_30d_in_currency || 0).toFixed(0)}% 30d · mcap ${fmt.bn(p.market_cap)}`)],
+      risks: ['Underperformance often reflects fundamentals', 'Catalyst required for re-rating', 'Falling knives keep falling'],
+    };
+  }
+
+  return {
+    signal: 'NO MATCH', signalColor: 'amber', confidence: 0,
+    bullets: ['No structured workflow matched your query.', 'Try: "Analyze my portfolio", "Market state", "DeFi opportunities", "Risk-adjusted screen", "Overvalued", "Undervalued"'],
+    risks: [],
+  };
+}
+
+function sendQuery() {
+  const input = document.getElementById('copilot-input');
+  const q = input.value.trim();
+  if (!q) return;
+  const msgs = document.getElementById('copilot-messages');
+  const r = answerQuery(q);
+  msgs.innerHTML += `
+    <div class="msg-user"><div class="msg-user-bubble">${q}</div></div>
+    <div class="msg-assistant">
+      <div class="msg-assistant-icon">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#F59E0B" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div class="msg-assistant-body">
+        <div class="msg-assistant-text">Live data snapshot analysis:</div>
+        <div class="msg-analysis">
+          <div class="msg-analysis-head">
+            <span class="tag ${r.signalColor}">${r.signal}</span>
+            <span style="font-size: 10px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace">confidence ${r.confidence}%</span>
+          </div>
+          <div class="msg-section-label signals">LIVE SIGNALS</div>
+          ${r.bullets.map(b => `<div class="msg-bullet">${b}</div>`).join('')}
+          ${r.risks.length ? `<div class="msg-section-label risks">RISKS</div>${r.risks.map(rk => `<div class="msg-risk">${rk}</div>`).join('')}` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ============ NAVIGATION ============
+const moduleLabels = {
+  dashboard: 'MARKET DASHBOARD',
+  portfolio: 'PORTFOLIO ENGINE',
+  reco: 'RISK & RECOMMENDATIONS',
+  defi: 'DEFI INTELLIGENCE',
+  valuation: 'VALUATION LAB',
+  tokenomics: 'TOKENOMICS ENGINE',
+  copilot: 'AI COPILOT',
+};
+
+function showModule(mod) {
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-module="${mod}"]`).classList.add('active');
+  document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+  document.getElementById('module-' + mod).classList.add('active');
+  document.getElementById('breadcrumb-active').textContent = moduleLabels[mod];
+
+  setTimeout(() => {
+    if (mod === 'dashboard') renderBTC();
+    if (mod === 'portfolio') renderPortfolio();
+    if (mod === 'reco') renderRecommendations();
+    if (mod === 'defi') { renderTVL(); renderChainChart(); }
+    if (mod === 'valuation') loadVal();
+    if (mod === 'tokenomics') loadTokenomics();
+  }, 50);
+}
+
+document.querySelectorAll('.sidebar-item').forEach(btn => {
+  btn.addEventListener('click', () => showModule(btn.dataset.module));
+});
+
+// ============ GLOBAL SEARCH ============
+const searchInput = document.getElementById('global-search');
+const searchResults = document.getElementById('search-results');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase();
+  if (!q || q.length < 2 || !state.protocols.length) {
+    searchResults.classList.remove('active');
+    return;
+  }
+  const matches = state.protocols.filter(p =>
+    p.name.toLowerCase().includes(q) || p.symbol.toLowerCase().includes(q)
+  ).slice(0, 10);
+  if (!matches.length) {
+    searchResults.classList.remove('active');
+    return;
+  }
+  searchResults.innerHTML = matches.map(p => `
+    <div class="search-result" data-id="${p.id}">
+      <img src="${p.image}" onerror="this.style.display='none'" />
+      <span style="color: var(--text); width: 60px">${p.symbol.toUpperCase()}</span>
+      <span style="color: var(--text-dim); flex: 1">${p.name}</span>
+      <span style="color: var(--text)">${fmt.price(p.current_price)}</span>
+      <span style="color: ${(p.price_change_percentage_24h || 0) >= 0 ? 'var(--emerald)' : 'var(--red)'}">${fmt.pct(p.price_change_percentage_24h)}</span>
+    </div>
+  `).join('');
+  searchResults.classList.add('active');
+  searchResults.querySelectorAll('.search-result').forEach(r => {
+    r.addEventListener('click', () => {
+      const proto = state.protocols.find(p => p.id === r.dataset.id);
+      if (proto) {
+        addHolding(proto, 0, 0);
+        showModule('portfolio');
+      }
+      searchInput.value = '';
+      searchResults.classList.remove('active');
+    });
+  });
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-bar')) searchResults.classList.remove('active');
+});
+
+// ============ EVENT BINDINGS ============
+document.querySelectorAll('#btc-tf button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#btc-tf button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    fetchBTC(parseInt(b.dataset.tf));
+  });
+});
+
+['emission-slider', 'burn-slider', 'staking-slider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateTokenomicsOutput);
+});
+document.getElementById('tokenomics-asset').addEventListener('change', loadTokenomics);
+
+document.getElementById('val-protocol').addEventListener('change', loadVal);
+['disc-slider', 'growth-slider', 'exit-slider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', recomputeDCF);
+});
+
+document.getElementById('copilot-send').addEventListener('click', sendQuery);
+document.getElementById('copilot-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendQuery(); });
+document.querySelectorAll('.copilot-side-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('copilot-input').value = btn.dataset.q;
+    sendQuery();
+  });
+});
+
+// Live clock
+function updateTime() {
+  const now = new Date();
+  document.getElementById('live-time').textContent = `LIVE · ${now.toUTCString().slice(17, 25)}`;
+}
+setInterval(updateTime, 1000); updateTime();
+
+// ============ INIT ============
+async function init() {
+  loadPortfolio();
+  renderSidebarPortfolio();
+  await fetchGlobal();
+  await new Promise(r => setTimeout(r, 700));
+  await fetchProtocols();
+  await new Promise(r => setTimeout(r, 700));
+  await fetchBTC(30);
+  await new Promise(r => setTimeout(r, 700));
+  await fetchDefi();
+  await new Promise(r => setTimeout(r, 700));
+  await fetchTVL();
+
+  // Refresh light endpoints
+  setInterval(async () => {
+    await fetchGlobal();
+    await new Promise(r => setTimeout(r, 1500));
+    await fetchProtocols();
+  }, REFRESH_MS);
+}
+init();
+</script>
+</body>
+</html>
